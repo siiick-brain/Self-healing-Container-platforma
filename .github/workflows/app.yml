@@ -37,7 +37,7 @@ jobs:
           trap 'docker rm --force "$container"' EXIT
           address=$(docker port "$container" 8080/tcp)
           curl --fail --silent --retry 10 --retry-connrefused "http://$address/readyz"
-          uid=$(docker top "$container" -eo uid | tail -n +2 | tr -d '[:space:]')
+          uid=$(docker top "$container" -eo pid,uid | awk 'NR == 2 { print $2 }')
           test "$uid" = 10001
           printf 'uid=%s\n' "$uid"
           test "$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' "$container")" = true
