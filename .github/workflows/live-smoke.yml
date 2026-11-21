@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 25
     env:
       K3D_AGENTS: '2'
+      GITOPS_REVISION: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
@@ -64,6 +65,8 @@ jobs:
         run: |
           mkdir -p results/ci
           kubectl --context k3d-self-healing -n argocd get applications -o wide > results/ci/applications.txt 2>&1 || true
+          kubectl --context k3d-self-healing -n argocd get applications -o yaml > results/ci/application-status.yaml 2>&1 || true
+          kubectl --context k3d-self-healing -n argocd logs statefulset/argocd-application-controller --tail=250 > results/ci/application-controller.txt 2>&1 || true
           kubectl --context k3d-self-healing get pods -A > results/ci/pods.txt 2>&1 || true
           kubectl --context k3d-self-healing get events -A --sort-by=.lastTimestamp > results/ci/events.txt 2>&1 || true
       - uses: actions/upload-artifact@v4
