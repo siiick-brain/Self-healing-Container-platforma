@@ -25,6 +25,7 @@ if ! "${kube[@]}" get --raw=/readyz >/dev/null 2>&1; then
   k3d cluster create --config "$config"
 fi
 
+"${kube[@]}" wait node --all --for=condition=Ready --timeout=120s
 "${kube[@]}" apply -f clusters/namespaces
 helm upgrade --install argocd argo-cd --repo https://argoproj.github.io/argo-helm   --version 7.8.13 --namespace argocd --create-namespace --kube-context "$context"   --values clusters/argocd-values.yaml --wait --timeout 5m
 
@@ -49,6 +50,21 @@ apply_root() {
               value: "$revision"
 EOF
     )
+    if [[ ${K3D_NODE_EXPORTER:-true} == false ]]; then
+      source_config+=$'\n'$(cat <<'EOF'
+        - target:
+            group: argoproj.io
+            kind: Application
+            name: kube-prometheus-stack
+          patch: |-
+            - op: add
+              path: /spec/source/helm/parameters
+              value:
+                - name: nodeExporter.enabled
+                  value: 'false'
+EOF
+      )
+    fi
   fi
   cat <<EOF | "${kube[@]}" apply -f -
 apiVersion: argoproj.io/v1alpha1
