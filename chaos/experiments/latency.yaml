@@ -1,0 +1,15 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: resilient-app-latency
+  namespace: demo
+spec:
+  action: delay
+  mode: one
+  selector:
+    labelSelectors:
+      app.kubernetes.io/name: resilient-app
+  delay:
+    latency: 1500ms
+  direction: both
+  duration: 15s

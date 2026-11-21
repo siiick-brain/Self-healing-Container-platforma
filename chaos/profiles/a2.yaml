@@ -1,0 +1,8 @@
+livenessProbe:
+  periodSeconds: 10
+  failureThreshold: 3
+  timeoutSeconds: 1
+readinessProbe:
+  periodSeconds: 10
+  failureThreshold: 3
+  timeoutSeconds: 1

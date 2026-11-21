@@ -1,0 +1,5 @@
+rollouts:
+  enabled: true
+  analysis:
+    enabled: true
+    templateName: resilient-app-success
