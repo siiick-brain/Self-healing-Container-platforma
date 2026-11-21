@@ -1,0 +1,4 @@
+chaosEnabled: true
+
+serviceMonitor:
+  enabled: true
