@@ -1,0 +1,29 @@
+{{- if .Values.rollouts.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "resilient-app.selectorLabels" . | nindent 6 }}
+  strategy:
+    canary:
+      canaryService: {{ .Release.Name }}-canary
+      {{- toYaml .Values.rollouts.canary | nindent 6 }}
+      {{- if .Values.rollouts.analysis.enabled }}
+      analysis:
+        templates:
+          - templateName: {{ .Values.rollouts.analysis.templateName | quote }}
+        startingStep: 1
+        args:
+          - name: canary-revision
+            valueFrom:
+              podTemplateHashValue: Latest
+      {{- end }}
+  template:
+    {{- include "resilient-app.podTemplate" . | nindent 4 }}
+{{- end }}

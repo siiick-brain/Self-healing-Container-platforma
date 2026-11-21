@@ -1,0 +1,11 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable | toJson }}
+  selector:
+    matchLabels:
+      {{- include "resilient-app.selectorLabels" . | nindent 6 }}
+{{- end }}
