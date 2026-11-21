@@ -1,0 +1,98 @@
+name: App image
+on:
+  pull_request:
+    paths: ['app/**', '.github/workflows/app.yml']
+  push:
+    branches: [main]
+    paths: ['app/**', '.github/workflows/app.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: ghcr.io/siiick-brain/resilient-app
+  TRIVY_IMAGE: aquasec/trivy:0.69.3
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+          cache: false
+      - name: Lint and test
+        working-directory: app
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          go test -race ./...
+      - name: Build image
+        run: docker build -t "$IMAGE_NAME:sha-$GITHUB_SHA" app
+      - name: Verify runtime settings
+        run: |
+          container=$(docker run --detach --read-only --cap-drop ALL --security-opt no-new-privileges --publish 127.0.0.1::8080 "$IMAGE_NAME:sha-$GITHUB_SHA")
+          trap 'docker rm --force "$container"' EXIT
+          address=$(docker port "$container" 8080/tcp)
+          curl --fail --silent --retry 10 --retry-connrefused "http://$address/readyz"
+          uid=$(docker top "$container" -eo uid | tail -n +2 | tr -d '[:space:]')
+          test "$uid" = 10001
+          printf 'uid=%s\n' "$uid"
+          test "$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' "$container")" = true
+          pid=$(docker inspect --format '{{.State.Pid}}' "$container")
+          test "$pid" -gt 0
+          if output=$(sudo env LC_ALL=C touch "/proc/$pid/root/.write-probe" 2>&1); then
+            exit 1
+          fi
+          grep -F "Read-only file system" <<< "$output"
+      - name: Scan image and generate SBOM
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --severity CRITICAL --exit-code 1 "$IMAGE_NAME:sha-$GITHUB_SHA"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --format spdx-json "$IMAGE_NAME:sha-$GITHUB_SHA" > sbom.spdx.json
+          test -s sbom.spdx.json
+      - name: Save verified release inputs
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: docker save "$IMAGE_NAME:sha-$GITHUB_SHA" -o image.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-image-and-sbom
+          path: |
+            image.tar
+            sbom.spdx.json
+          if-no-files-found: error
+
+  publish:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    concurrency:
+      group: app-image-publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-image-and-sbom
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: sigstore/cosign-installer@v3
+      - name: Push, sign and verify
+        run: |
+          image="$IMAGE_NAME:sha-$GITHUB_SHA"
+          docker load -i image.tar
+          docker push "$image"
+          digest=$(docker image inspect --format '{{index .RepoDigests 0}}' "$image")
+          cosign sign --yes "$digest"
+          cosign attest --yes --type spdxjson --predicate sbom.spdx.json "$digest"
+          cosign verify --certificate-identity "$GITHUB_SERVER_URL/$GITHUB_WORKFLOW_REF" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com "$digest"
+          docker tag "$image" "$IMAGE_NAME:main"
+          docker push "$IMAGE_NAME:main"
