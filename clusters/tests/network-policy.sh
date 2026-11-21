@@ -17,7 +17,7 @@ probe() {
   shift
   "${kube[@]}" -n "$namespace" run "$name" --restart=Never --rm -i --pod-running-timeout=90s \
     --overrides="$overrides" --image=curlimages/curl:8.12.1 --command -- \
-    curl -fsS --connect-timeout 2 --max-time 5 "$@" "$url"
+    curl -fsS --noproxy '*' --connect-timeout 2 --max-time 5 "$@" "$url"
 }
 
 probe ingress-nginx --retry 3 --retry-connrefused
@@ -27,7 +27,9 @@ if output=$(probe default 2>&1); then
   exit 1
 fi
 printf '%s\n' "$output"
-if ! grep -q 'curl: (28)' <<< "$output"; then
-  echo 'Expected the unauthorized request to time out.' >&2
+if ! grep -Eq 'curl: \((7|28)\)' <<< "$output"; then
+  echo 'Expected the unauthorized connection to be refused or time out.' >&2
   exit 1
 fi
+probe ingress-nginx --retry 3 --retry-connrefused
+echo 'The unauthorized connection was denied while the allowed path worked.'

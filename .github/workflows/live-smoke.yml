@@ -36,14 +36,20 @@ jobs:
           mv "$RUNNER_TEMP/k3d-bin" "$RUNNER_TEMP/bin/k3d"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - name: Start and verify core
+        id: core
         run: |
           set -o pipefail
           mkdir -p results/ci
           bash clusters/platform.sh core 2>&1 | tee results/ci/up-core.txt
           curl -fsS --retry 10 --retry-connrefused --max-time 10 http://127.0.0.1:8080/work |
             tee results/ci/work.txt
+      - name: Verify network policy
+        run: |
+          set -o pipefail
           bash clusters/tests/network-policy.sh 2>&1 | tee results/ci/network-policy.txt
       - name: Prepare disposable full-profile dependencies
+        id: full_dependencies
+        if: ${{ !cancelled() && steps.core.outcome == 'success' }}
         run: |
           docker build -t ghcr.io/siiick-brain/diagnostics-receiver:main ops/receiver
           k3d image import -c self-healing ghcr.io/siiick-brain/diagnostics-receiver:main
@@ -56,6 +62,7 @@ jobs:
           kubectl --context k3d-self-healing -n ops create secret generic diagnostics-minio \
             --from-literal=access-key="$user" --from-literal=secret-key="$password"
       - name: Start and verify full
+        if: ${{ !cancelled() && steps.full_dependencies.outcome == 'success' }}
         run: |
           set -o pipefail
           bash clusters/platform.sh full 2>&1 | tee results/ci/up-full.txt
