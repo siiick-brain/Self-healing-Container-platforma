@@ -39,7 +39,9 @@ jobs:
           set -o pipefail
           for values in charts/resilient-app/values-{k3d,aks}.yaml; do
             helm template resilient-app charts/resilient-app -f "$values" |
-              docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary - || exit
+              docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary \
+                -schema-location default \
+                -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/784ec895547a36e548e6810b41f27baade3a0890/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' - || exit
           done
       - if: matrix.check == 'promtool' && hashFiles('alerts/*.yaml') != ''
         run: |
