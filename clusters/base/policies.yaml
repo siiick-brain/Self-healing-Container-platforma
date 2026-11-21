@@ -1,0 +1,49 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-demo-pods
+spec:
+  background: true
+  rules:
+    - name: require-non-root-pods
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [demo]
+      validate:
+        failureAction: Enforce
+        message: Set runAsNonRoot on the pod.
+        pattern:
+          spec:
+            securityContext:
+              runAsNonRoot: true
+            containers:
+              - =(securityContext):
+                  =(runAsNonRoot): true
+                  =(runAsUser): '>0'
+            =(initContainers):
+              - =(securityContext):
+                  =(runAsNonRoot): true
+                  =(runAsUser): '>0'
+    - name: require-resource-limits
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [demo]
+      validate:
+        failureAction: Enforce
+        message: Set CPU and memory limits on each container.
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  limits:
+                    cpu: '?*'
+                    memory: '?*'
+            =(initContainers):
+              - resources:
+                  limits:
+                    cpu: '?*'
+                    memory: '?*'

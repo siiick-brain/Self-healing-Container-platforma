@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: resilient-app
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo
+  source:
+    repoURL: https://github.com/siiick-brain/Self-healing-Container-platforma.git
+    targetRevision: main
+    path: charts/resilient-app
+    helm:
+      valueFiles: [values-k3d.yaml]
+  ignoreDifferences:
+    - group: ""
+      kind: Service
+      name: resilient-app-canary
+      jsonPointers:
+        - /spec/selector/rollouts-pod-template-hash
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
