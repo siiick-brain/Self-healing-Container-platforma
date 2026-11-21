@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["scenario", "config", "run_id", "injected_at", "detected_at", "restarted_at", "traffic_restored_at", "detection_s", "restart_s", "mttr_s", "dropped_requests_pct", "injection_type"],
+  "properties": {
+    "scenario": {"enum": ["crash", "latency", "leak"]},
+    "config": {"enum": ["A", "A2", "B", "C"]},
+    "run_id": {"type": "string", "minLength": 1},
+    "injected_at": {"type": "string", "format": "date-time"},
+    "detected_at": {"type": ["string", "null"], "format": "date-time"},
+    "restarted_at": {"type": ["string", "null"], "format": "date-time"},
+    "traffic_restored_at": {"type": ["string", "null"], "format": "date-time"},
+    "detection_s": {"type": ["number", "null"], "minimum": 0},
+    "restart_s": {"type": ["number", "null"], "minimum": 0},
+    "mttr_s": {"type": ["number", "null"], "minimum": 0},
+    "dropped_requests_pct": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+    "injection_type": {"enum": ["app-level", "chaos-mesh"]}
+  }
+}

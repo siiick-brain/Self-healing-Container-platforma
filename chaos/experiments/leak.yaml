@@ -1,0 +1,16 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: resilient-app-memory
+  namespace: demo
+spec:
+  mode: one
+  selector:
+    labelSelectors:
+      app.kubernetes.io/name: resilient-app
+  containerNames: [app]
+  stressors:
+    memory:
+      workers: 1
+      size: 160MB
+  duration: 15s
