@@ -32,15 +32,18 @@ helm upgrade --install argocd argo-cd --repo https://argoproj.github.io/argo-hel
 repo=${GITOPS_REPO:-https://github.com/siiick-brain/Self-healing-Container-platforma.git}
 revision=${GITOPS_REVISION:-main}
 apply_root() {
-  local source_config=''
-  if [[ $1 == core ]]; then
-    source_config=$(cat <<EOF
+  local source_config project_apps
+  case "$1" in
+    core) project_apps='platform-policy|resilient-app' ;;
+    full) project_apps='diagnostics-receiver|grafana-dashboards|minio|observability|vpa-recommendation' ;;
+  esac
+  source_config=$(cat <<EOF
     kustomize:
       patches:
         - target:
             group: argoproj.io
             kind: Application
-            name: 'platform-policy|resilient-app'
+            name: '$project_apps'
           patch: |-
             - op: replace
               path: /spec/source/repoURL
@@ -49,9 +52,9 @@ apply_root() {
               path: /spec/source/targetRevision
               value: "$revision"
 EOF
-    )
-    if [[ ${K3D_NODE_EXPORTER:-true} == false ]]; then
-      source_config+=$'\n'$(cat <<'EOF'
+  )
+  if [[ $1 == core && ${K3D_NODE_EXPORTER:-true} == false ]]; then
+    source_config+=$'\n'$(cat <<'EOF'
         - target:
             group: argoproj.io
             kind: Application
@@ -63,8 +66,7 @@ EOF
                 - name: nodeExporter.enabled
                   value: 'false'
 EOF
-      )
-    fi
+    )
   fi
   cat <<EOF | "${kube[@]}" apply -f -
 apiVersion: argoproj.io/v1alpha1

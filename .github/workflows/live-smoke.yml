@@ -75,6 +75,8 @@ jobs:
           kubectl --context k3d-self-healing -n argocd get applications -o wide > results/ci/applications.txt 2>&1 || true
           kubectl --context k3d-self-healing -n argocd get applications -o yaml > results/ci/application-status.yaml 2>&1 || true
           kubectl --context k3d-self-healing -n argocd logs statefulset/argocd-application-controller --tail=250 > results/ci/application-controller.txt 2>&1 || true
+          kubectl --context k3d-self-healing -n chaos-mesh logs -l app.kubernetes.io/component=controller-manager --prefix --tail=100 > results/ci/chaos-controller.txt 2>&1 || true
+          kubectl --context k3d-self-healing -n chaos-mesh logs -l app.kubernetes.io/component=controller-manager --previous --prefix --tail=100 > results/ci/chaos-controller-previous.txt 2>&1 || true
           kubectl --context k3d-self-healing get pods -A > results/ci/pods.txt 2>&1 || true
           kubectl --context k3d-self-healing describe nodes > results/ci/nodes.txt 2>&1 || true
           kubectl --context k3d-self-healing -n demo get services,endpointslices,networkpolicies -o yaml > results/ci/demo-network.yaml 2>&1 || true

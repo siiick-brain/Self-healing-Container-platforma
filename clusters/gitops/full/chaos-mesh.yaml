@@ -23,6 +23,67 @@ spec:
           socketPath: /run/k3s/containerd/containerd.sock
         dashboard:
           create: false
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: chaos-controller-manager
+      namespace: chaos-mesh
+      jsonPointers:
+        - /spec/template/metadata/annotations/rollme
+    - group: apps
+      kind: DaemonSet
+      name: chaos-daemon
+      namespace: chaos-mesh
+      jsonPointers:
+        - /spec/template/metadata/annotations/rollme
+    - group: ""
+      kind: Secret
+      name: chaos-mesh-webhook-certs
+      namespace: chaos-mesh
+      jsonPointers:
+        - /data/ca.crt
+        - /data/tls.crt
+        - /data/tls.key
+    - group: ""
+      kind: Secret
+      name: chaos-mesh-daemon-certs
+      namespace: chaos-mesh
+      jsonPointers:
+        - /data/ca.crt
+        - /data/tls.crt
+        - /data/tls.key
+    - group: ""
+      kind: Secret
+      name: chaos-mesh-daemon-client-certs
+      namespace: chaos-mesh
+      jsonPointers:
+        - /data/ca.crt
+        - /data/tls.crt
+        - /data/tls.key
+    - group: ""
+      kind: Secret
+      name: chaos-mesh-chaosd-client-certs
+      namespace: chaos-mesh
+      jsonPointers:
+        - /data/ca.crt
+        - /data/tls.crt
+        - /data/tls.key
+        - /data/ca.key
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      name: chaos-mesh-mutation
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: chaos-mesh-validation
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: chaos-mesh-validation-auth
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
   syncPolicy:
     automated:
       prune: true
@@ -30,3 +91,4 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
