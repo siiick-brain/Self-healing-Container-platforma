@@ -31,6 +31,25 @@ helm upgrade --install argocd argo-cd --repo https://argoproj.github.io/argo-hel
 repo=${GITOPS_REPO:-https://github.com/siiick-brain/Self-healing-Container-platforma.git}
 revision=${GITOPS_REVISION:-main}
 apply_root() {
+  local source_config=''
+  if [[ $1 == core ]]; then
+    source_config=$(cat <<EOF
+    kustomize:
+      patches:
+        - target:
+            group: argoproj.io
+            kind: Application
+            name: 'platform-policy|resilient-app'
+          patch: |-
+            - op: replace
+              path: /spec/source/repoURL
+              value: "$repo"
+            - op: replace
+              path: /spec/source/targetRevision
+              value: "$revision"
+EOF
+    )
+  fi
   cat <<EOF | "${kube[@]}" apply -f -
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -43,6 +62,7 @@ spec:
     repoURL: "$repo"
     targetRevision: "$revision"
     path: clusters/gitops/$1
+$source_config
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -58,6 +78,7 @@ wait_for_apps() {
   local app_names=("platform-$profile")
   for manifest in "clusters/gitops/$profile"/*.yaml; do
     name=${manifest##*/}
+    [[ $name != kustomization.yaml ]] || continue
     app_names+=("${name%.yaml}")
   done
 

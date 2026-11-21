@@ -9,8 +9,9 @@ metadata:
     {{- include "resilient-app.selectorLabels" . | nindent 4 }}
 spec:
   automountServiceAccountToken: false
-  {{- if .Values.diagnostics.enabled }}
   securityContext:
+    runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+    {{- if .Values.diagnostics.enabled }}
     fsGroup: {{ .Values.securityContext.runAsGroup }}
   {{- end }}
   {{- with .Values.topologySpreadConstraints }}
