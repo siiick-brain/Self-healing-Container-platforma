@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: oom-diagnostics
+  namespace: demo
+  labels:
+    release: kube-prometheus-stack
+spec:
+  route:
+    receiver: diagnostics
+    groupBy: [alertname, namespace, pod, container]
+    groupWait: 0s
+    groupInterval: 30s
+    repeatInterval: 1h
+    matchers:
+      - name: alertname
+        value: PodOOMKilled
+        matchType: "="
+  receivers:
+    - name: diagnostics
+      webhookConfigs:
+        - url: http://diagnostics-receiver.ops.svc:8080/alerts
+          sendResolved: false

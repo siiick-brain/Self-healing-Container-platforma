@@ -1,0 +1,75 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: resilient-app
+  namespace: demo
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+  - name: resilient-app.slo
+    rules:
+      - record: resilient:work_requests:rate5m
+        expr: sum(rate(http_requests_total{namespace="demo",path="/work"}[5m]))
+      - record: resilient:work_errors:ratio5m
+        expr: |
+          ((sum(rate(http_requests_total{namespace="demo",path="/work",status=~"5.."}[5m])) or 0 * resilient:work_requests:rate5m)
+          / resilient:work_requests:rate5m)
+          and (resilient:work_requests:rate5m > 0)
+      - record: resilient:work_requests:rate30m
+        expr: sum(rate(http_requests_total{namespace="demo",path="/work"}[30m]))
+      - record: resilient:work_errors:ratio30m
+        expr: |
+          ((sum(rate(http_requests_total{namespace="demo",path="/work",status=~"5.."}[30m])) or 0 * resilient:work_requests:rate30m)
+          / resilient:work_requests:rate30m)
+          and (resilient:work_requests:rate30m > 0)
+      - record: resilient:work_requests:rate1h
+        expr: sum(rate(http_requests_total{namespace="demo",path="/work"}[1h]))
+      - record: resilient:work_errors:ratio1h
+        expr: |
+          ((sum(rate(http_requests_total{namespace="demo",path="/work",status=~"5.."}[1h])) or 0 * resilient:work_requests:rate1h)
+          / resilient:work_requests:rate1h)
+          and (resilient:work_requests:rate1h > 0)
+      - record: resilient:work_requests:rate6h
+        expr: sum(rate(http_requests_total{namespace="demo",path="/work"}[6h]))
+      - record: resilient:work_errors:ratio6h
+        expr: |
+          ((sum(rate(http_requests_total{namespace="demo",path="/work",status=~"5.."}[6h])) or 0 * resilient:work_requests:rate6h)
+          / resilient:work_requests:rate6h)
+          and (resilient:work_requests:rate6h > 0)
+      - record: resilient:work_requests:rate30d
+        expr: sum(rate(http_requests_total{namespace="demo",path="/work"}[30d]))
+      - record: resilient:work_errors:ratio30d
+        expr: |
+          ((sum(rate(http_requests_total{namespace="demo",path="/work",status=~"5.."}[30d])) or 0 * resilient:work_requests:rate30d)
+          / resilient:work_requests:rate30d)
+          and (resilient:work_requests:rate30d > 0)
+      - alert: HighBurnRate
+        expr: |
+          ((resilient:work_errors:ratio1h > 14.4 * 0.005)
+          and (resilient:work_errors:ratio5m > 14.4 * 0.005))
+          or
+          ((resilient:work_errors:ratio6h > 6 * 0.005)
+          and (resilient:work_errors:ratio30m > 6 * 0.005))
+        labels:
+          namespace: demo
+          severity: page
+        annotations:
+          summary: The availability error budget is burning quickly
+      - alert: SLOAvailabilityBreach
+        expr: resilient:work_errors:ratio30d > 0.005
+        for: 5m
+        labels:
+          namespace: demo
+          severity: warning
+        annotations:
+          summary: The availability SLO is below target over the observed window
+      - alert: PodOOMKilled
+        expr: |
+          (kube_pod_container_status_last_terminated_reason{namespace="demo",reason="OOMKilled"} == 1)
+          and on (namespace,pod,container,uid)
+          (increase(kube_pod_container_status_restarts_total{namespace="demo"}[15m]) > 0)
+        labels:
+          severity: warning
+        annotations:
+          summary: A demo container restarted after an out-of-memory kill

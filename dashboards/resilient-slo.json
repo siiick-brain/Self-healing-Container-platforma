@@ -1,0 +1,129 @@
+{
+  "uid": "resilient-slo",
+  "title": "Resilient app SLO",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Availability over observed history",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "1 - resilient:work_errors:ratio30d",
+          "legendFormat": "Work availability",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "expr": "vector(0.995)",
+          "legendFormat": "Target",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Short error budget burn",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "resilient:work_errors:ratio5m / 0.005",
+          "legendFormat": "5 min",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "expr": "resilient:work_errors:ratio1h / 0.005",
+          "legendFormat": "1 hour",
+          "range": true
+        },
+        {
+          "refId": "C",
+          "expr": "vector(14.4)",
+          "legendFormat": "Page threshold",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Long error budget burn",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "resilient:work_errors:ratio30m / 0.005",
+          "legendFormat": "30 min",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "expr": "resilient:work_errors:ratio6h / 0.005",
+          "legendFormat": "6 hour",
+          "range": true
+        },
+        {
+          "refId": "C",
+          "expr": "vector(6)",
+          "legendFormat": "Page threshold",
+          "range": true
+        }
+      ]
+    }
+  ]
+}

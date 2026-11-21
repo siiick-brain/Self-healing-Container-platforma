@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: resilient-app-success
+  namespace: demo
+spec:
+  args:
+    - name: canary-revision
+  metrics:
+    - name: work-success-ratio
+      initialDelay: 2m
+      interval: 1m
+      count: 3
+      failureLimit: 0
+      successCondition: len(result) == 1 && result[0] >= 0.995
+      failureCondition: len(result) != 1 || result[0] < 0.995
+      provider:
+        prometheus:
+          address: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
+          query: |
+            (
+              sum(rate(http_requests_total{namespace="demo",path="/work",rollouts_pod_template_hash="{{args.canary-revision}}",status!~"5.."}[2m]))
+              or 0 * sum(rate(http_requests_total{namespace="demo",path="/work",rollouts_pod_template_hash="{{args.canary-revision}}"}[2m]))
+            ) / sum(rate(http_requests_total{namespace="demo",path="/work",rollouts_pod_template_hash="{{args.canary-revision}}"}[2m]))
+            and sum(rate(http_requests_total{namespace="demo",path="/work",rollouts_pod_template_hash="{{args.canary-revision}}"}[2m])) > 0
