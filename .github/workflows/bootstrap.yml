@@ -1,0 +1,58 @@
+name: Bootstrap
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          for script in scripts/*.sh .githooks/commit-msg; do bash -n "$script" || exit; done
+          make lint
+  authorship:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - env:
+          OWNER_EMAIL: ${{ vars.OWNER_EMAIL }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash scripts/check-authorship.sh "$BASE..$HEAD_SHA"
+  validation:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [test, helm, kubeconform, promtool, trivy, terraform, markdown-links]
+    steps:
+      - uses: actions/checkout@v4
+      - if: matrix.check == 'test' && hashFiles('app/go.mod') != ''
+        run: cd app && go test ./...
+      - if: matrix.check == 'helm' && hashFiles('charts/resilient-app/Chart.yaml') != ''
+        run: helm lint charts/resilient-app
+      - if: matrix.check == 'kubeconform' && hashFiles('charts/resilient-app/Chart.yaml') != ''
+        run: |
+          set -o pipefail
+          for values in charts/resilient-app/values-{k3d,aks}.yaml; do
+            helm template resilient-app charts/resilient-app -f "$values" |
+              docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary - || exit
+          done
+      - if: matrix.check == 'promtool' && hashFiles('alerts/*.yaml') != ''
+        run: |
+          docker run --rm -v "$PWD:/repo:ro" -w /repo --entrypoint promtool prom/prometheus:v3.5.0 check rules alerts/*.rules.yaml
+          docker run --rm -v "$PWD:/repo:ro" -w /repo --entrypoint promtool prom/prometheus:v3.5.0 test rules alerts/*.test.yaml
+      - if: matrix.check == 'trivy'
+        run: docker run --rm -v "$PWD:/repo:ro" aquasec/trivy:0.69.3 fs --severity CRITICAL --exit-code 1 /repo
+      - uses: hashicorp/setup-terraform@v3
+        if: matrix.check == 'terraform' && hashFiles('terraform/aks/*.tf') != ''
+      - if: matrix.check == 'terraform' && hashFiles('terraform/aks/*.tf') != ''
+        run: terraform -chdir=terraform/aks init -backend=false && terraform -chdir=terraform/aks validate
+      - uses: lycheeverse/lychee-action@v2
+        if: matrix.check == 'markdown-links'
+        with:
+          args: --offline --include-fragments './**/*.md'
+          fail: true

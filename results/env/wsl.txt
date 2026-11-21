@@ -1,0 +1,15 @@
+6.18.58.1-microsoft-standard-WSL2
+/usr/bin/docker
+/usr/local/bin/kubectl
+/usr/local/bin/helm
+/usr/local/bin/k3d
+/usr/local/bin/terraform
+/usr/local/bin/promtool
+/usr/local/bin/kubeconform
+/usr/bin/gh
+               total        used        free      shared  buff/cache   available
+Mem:            15Gi       3.6Gi       5.9Gi       564Mi       6.8Gi        11Gi
+Swap:          4.0Gi        80Ki       4.0Gi
+29.9.2
+qdisc netem 8002: root refcnt 2 limit 1000 delay 100ms seed 5569716076875166294
+netem available
