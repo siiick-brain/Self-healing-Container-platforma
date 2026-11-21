@@ -56,6 +56,8 @@ kind: Application
 metadata:
   name: platform-$1
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   project: default
   source:

@@ -68,6 +68,7 @@ jobs:
           kubectl --context k3d-self-healing -n argocd get applications -o yaml > results/ci/application-status.yaml 2>&1 || true
           kubectl --context k3d-self-healing -n argocd logs statefulset/argocd-application-controller --tail=250 > results/ci/application-controller.txt 2>&1 || true
           kubectl --context k3d-self-healing get pods -A > results/ci/pods.txt 2>&1 || true
+          kubectl --context k3d-self-healing -n demo get servicemonitor resilient-app -o yaml > results/ci/servicemonitor.yaml 2>&1 || true
           kubectl --context k3d-self-healing get events -A --sort-by=.lastTimestamp > results/ci/events.txt 2>&1 || true
       - uses: actions/upload-artifact@v4
         if: always()
