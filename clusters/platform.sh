@@ -51,14 +51,38 @@ spec:
       prune: true
       selfHeal: true
 EOF
-  "${kube[@]}" -n argocd wait "application/platform-$1"     --for=jsonpath='{.status.health.status}'=Healthy --timeout=5m
+}
+
+wait_for_apps() {
+  local profile=$1 manifest name deadline=$((SECONDS + 300))
+  local app_names=("platform-$profile")
+  for manifest in "clusters/gitops/$profile"/*.yaml; do
+    name=${manifest##*/}
+    app_names+=("${name%.yaml}")
+  done
+
+  while (( SECONDS < deadline )); do
+    if "${kube[@]}" -n argocd get applications "${app_names[@]}" -o jsonpath='{range .items[*]}{.status.sync.status}{" "}{.status.health.status}{"\n"}{end}' 2>/dev/null |
+      awk -v count="${#app_names[@]}" '$1 == "Synced" && $2 == "Healthy" { good++ } END { exit !(good == count) }'; then
+      return 0
+    fi
+    sleep 5
+  done
+
+  echo "GitOps applications for $profile did not all reach Synced and Healthy." >&2
+  "${kube[@]}" -n argocd get applications -o wide >&2 || true
+  "${kube[@]}" -n argocd get applications -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.conditions[*].message}{"\n"}{end}' >&2 || true
+  "${kube[@]}" get pods -A >&2 || true
+  return 1
 }
 
 apply_root core
+wait_for_apps core
 if [[ $profile == full ]]; then
   "${kube[@]}" -n storage get secret minio-credentials >/dev/null
   "${kube[@]}" -n ops get secret diagnostics-minio >/dev/null
   apply_root full
+  wait_for_apps full
 fi
 mkdir -p results/env
 mapfile -t nodes < <(docker ps --filter "name=k3d-$name" --format "{{.Names}}")
