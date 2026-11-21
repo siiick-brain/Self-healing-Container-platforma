@@ -1,5 +1,5 @@
 ---
-name: Agent task
+name: Implementation task
 about: Define one scoped PR with executable acceptance criteria
 title: ""
 labels: ""
