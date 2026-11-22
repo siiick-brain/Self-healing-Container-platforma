@@ -1,0 +1,162 @@
+2026-11-22T13:57:30.753202+00:00 Context=k3d-self-healing namespace=demo target=resilient-app-ff44d4655-9p7r8 resource=networkchaos/resilient-app-smoke-8d20bf4b5eed4667bf917440830d154a
+2026-11-22T13:57:30.834195+00:00 Baseline ready, node=k3d-self-healing-agent-0 target_uid=d3449f14-baa1-4689-8bf7-ba4d80f7d8c4 ingress healthy
+2026-11-22T13:57:31.049581+00:00 networkchaos.chaos-mesh.org/resilient-app-smoke-8d20bf4b5eed4667bf917440830d154a created
+2026-11-22T13:58:31.409644+00:00 Samples after controller confirmation, ingress healthy=0 ingress failed=0; original target unready or absent=False
+2026-11-22T13:58:31.409737+00:00 FAIL: Observation expired before confirming injection and workload recovery
+2026-11-22T13:58:31.516821+00:00 Name:         resilient-app-smoke-8d20bf4b5eed4667bf917440830d154a
+Namespace:    demo
+Labels:       <none>
+Annotations:  <none>
+API Version:  chaos-mesh.org/v1alpha1
+Kind:         NetworkChaos
+Metadata:
+  Creation Timestamp:  2026-11-22T13:57:31Z
+  Finalizers:
+    chaos-mesh/records
+  Generation:        22
+  Resource Version:  4265
+  UID:               3a6bf862-792b-4795-b0f2-a57cd70020ab
+Spec:
+  Action:  delay
+  Delay:
+    Correlation:  0
+    Jitter:       0ms
+    Latency:      1500ms
+  Direction:      to
+  Duration:       15s
+  Mode:           one
+  Selector:
+    Namespaces:
+      demo
+    Pods:
+      Demo:
+        resilient-app-ff44d4655-9p7r8
+Status:
+  Conditions:
+    Status:  True
+    Type:    Selected
+    Status:  False
+    Type:    AllInjected
+    Status:  False
+    Type:    AllRecovered
+    Status:  False
+    Type:    Paused
+  Experiment:
+    Container Records:
+      Events:
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:31Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:31Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:31Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:31Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:31Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:31Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:31Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:31Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:32Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:32Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:33Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:33Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:39Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:39Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:59Z
+        Type:           Failed
+        Message:        failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+        Operation:      Apply
+        Timestamp:      2026-11-22T13:57:59Z
+        Type:           Failed
+      Id:               demo/resilient-app-ff44d4655-9p7r8
+      Injected Count:   0
+      Phase:            Not Injected/Wait
+      Recovered Count:  0
+      Selector Key:     .
+    Desired Phase:      Stop
+  Instances:
+    demo/resilient-app-ff44d4655-9p7r8:  1
+Events:
+  Type     Reason           Age   From            Message
+  ----     ------           ----  ----            -------
+  Normal   FinalizerInited  60s   initFinalizers  Finalizer has been inited
+  Normal   Updated          60s   initFinalizers  Successfully update finalizer of resource
+  Normal   Started          60s   desiredphase    Experiment has started
+  Normal   Updated          60s   desiredphase    Successfully update desiredPhase of resource
+  Normal   Updated          60s   records         Successfully update records of resource
+  Warning  Failed           60s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          60s   records         Successfully update records of resource
+  Warning  Failed           60s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          60s   records         Successfully update records of resource
+  Warning  Failed           60s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          60s   records         Successfully update records of resource
+  Warning  Failed           60s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          60s   records         Successfully update records of resource
+  Warning  Failed           60s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          60s   records         Successfully update records of resource
+  Warning  Failed           60s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          60s   records         Successfully update records of resource
+  Warning  Failed           60s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          60s   records         Successfully update records of resource
+  Warning  Failed           60s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          60s   records         Successfully update records of resource
+  Warning  Failed           59s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          59s   records         Successfully update records of resource
+  Warning  Failed           59s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          59s   records         Successfully update records of resource
+  Warning  Failed           58s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          58s   records         Successfully update records of resource
+  Warning  Failed           58s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          58s   records         Successfully update records of resource
+  Warning  Failed           52s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          52s   records         Successfully update records of resource
+  Warning  Failed           52s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          52s   records         Successfully update records of resource
+  Normal   TimeUp           32s   desiredphase    Time up according to the duration
+  Normal   Updated          32s   desiredphase    Successfully update desiredPhase of resource
+  Warning  Failed           32s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          32s   records         Successfully update records of resource
+  Warning  Failed           32s   records         Failed to apply chaos: failed to apply for pod demo/resilient-app-ff44d4655-9p7r8: unable to set ip tables chains for pod resilient-app-ff44d4655-9p7r8
+  Normal   Updated          32s   records         Successfully update records of resource
+2026-11-22T13:58:51.588837+00:00 Cleanup unverified: error: timed out waiting for the condition on networkchaos/resilient-app-smoke-8d20bf4b5eed4667bf917440830d154a
+2026-11-22T13:58:51.588908+00:00 FAIL: verify cleanup before starting another experiment or a fallback

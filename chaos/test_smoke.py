@@ -2,7 +2,7 @@ import argparse
 import subprocess
 import unittest
 from itertools import chain, repeat
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import smoke
 from test_measure import pod
@@ -38,6 +38,21 @@ class SmokeTest(unittest.TestCase):
                 self.assertEqual(self.logs[-2:], ["Cleanup confirmed", "PASS: Chaos Mesh smoke verified"])
                 self.assertIn("create", run.call_args_list[0].args[0])
                 self.assertIn("delete", run.call_args_list[1].args[0])
+
+    def test_app_latency_measures_delay_and_resets_the_same_target(self):
+        reply = MagicMock()
+        reply.__enter__.return_value.status = 200
+        inputs = argparse.Namespace(scenario="latency", pod="target", control_url="http://127.0.0.1:18080")
+        with (patch("smoke.get_pods", return_value=[self.baseline]),
+              patch("smoke.get_work", return_value=True),
+              patch("smoke.app_control") as control,
+              patch("smoke.urllib.request.urlopen", return_value=reply),
+              patch("smoke.time.monotonic", side_effect=[100, 101.5]),
+              patch("smoke.mesh_manifest") as mesh):
+            self.assertEqual(smoke.smoke(inputs, self.logs.append, app_latency=True), 0)
+        self.assertEqual([entry.args[1] for entry in control.call_args_list], ["latency", "reset"])
+        self.assertEqual(self.logs[-2:], ["Cleanup confirmed", "PASS: App-level latency smoke verified"])
+        mesh.assert_not_called()
 
     def test_cleanup_failure_blocks_fallback(self):
         with (patch("smoke.get_pods", return_value=[self.baseline]),
