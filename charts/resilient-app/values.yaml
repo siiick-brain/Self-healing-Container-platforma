@@ -1,6 +1,7 @@
 image:
   repository: ghcr.io/siiick-brain/resilient-app
   tag: main
+  digest: ""
   pullPolicy: IfNotPresent
 
 replicaCount: 3

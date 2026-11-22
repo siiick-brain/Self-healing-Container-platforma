@@ -1,0 +1,171 @@
+name: Hosted recovery matrix
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      image_digest: ${{ steps.pin.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require committed fault evidence
+        run: |
+          for fault in pod network stress; do
+            log=$(git show "HEAD:results/chaos-smoke/$fault.txt")
+            marker='PASS: Chaos Mesh smoke verified'
+            if [[ $fault == network ]]; then
+              marker='PASS: App-level latency smoke verified'
+            fi
+            grep -Fq "$marker" <<< "$log"
+            grep -Fq 'Cleanup confirmed' <<< "$log"
+          done
+      - name: Pin the published app image for all profiles
+        id: pin
+        run: |
+          image=ghcr.io/siiick-brain/resilient-app:main
+          docker pull "$image"
+          ref=$(docker image inspect --format '{{index .RepoDigests 0}}' "$image")
+          digest=${ref#*@}
+          [[ $ref == ghcr.io/siiick-brain/resilient-app@* && $digest =~ ^sha256:[0-9a-f]{64}$ ]]
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+  measure:
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 210
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [A, A2, B, C]
+    env:
+      K3D_AGENTS: '2'
+      K3D_NODE_EXPORTER: 'false'
+      GITOPS_REVISION: ${{ github.sha }}
+      PROFILE: ${{ matrix.profile }}
+      APP_DIGEST: ${{ needs.preflight.outputs.image_digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.19.0
+      - name: Install the pinned test tools
+        run: |
+          bin="$RUNNER_TEMP/matrix-bin"
+          mkdir -p "$bin"
+          curl -fsSLo "$bin/k3d" https://github.com/k3d-io/k3d/releases/download/v5.8.3/k3d-linux-amd64
+          chmod +x "$bin/k3d"
+          cd "$RUNNER_TEMP"
+          archive=k6-v0.58.0-linux-amd64.tar.gz
+          release=https://github.com/grafana/k6/releases/download/v0.58.0
+          curl -fsSLO "$release/$archive"
+          curl -fsSLO "$release/k6-v0.58.0-checksums.txt"
+          awk -v archive="$archive" '$2 == archive || $2 == ("*" archive)' k6-v0.58.0-checksums.txt |
+            sha256sum --check --strict
+          tar -xzf "$archive"
+          install -m 0755 k6-v0.58.0-linux-amd64/k6 "$bin/k6"
+          echo "$bin" >> "$GITHUB_PATH"
+          if (( $(sysctl -n fs.inotify.max_user_instances) < 1024 )); then
+            sudo sysctl -w fs.inotify.max_user_instances=1024
+          fi
+      - name: Start the disposable full profile
+        run: |
+          if ! bash clusters/platform.sh core; then
+            echo 'Retrying core on a fresh disposable cluster.'
+            k3d cluster delete self-healing
+            bash clusters/platform.sh core
+          fi
+          docker build -t ghcr.io/siiick-brain/diagnostics-receiver:main ops/receiver
+          k3d image import -c self-healing ghcr.io/siiick-brain/diagnostics-receiver:main
+          user=$(openssl rand -hex 12)
+          password=$(openssl rand -hex 24)
+          echo "::add-mask::$user"
+          echo "::add-mask::$password"
+          kubectl --context k3d-self-healing -n storage create secret generic minio-credentials \
+            --from-literal=root-user="$user" --from-literal=root-password="$password"
+          kubectl --context k3d-self-healing -n ops create secret generic diagnostics-minio \
+            --from-literal=access-key="$user" --from-literal=secret-key="$password"
+          bash clusters/platform.sh full
+      - name: Bind the trial profile and approved image digest
+        env:
+          K3D_CHAOS_PROFILE: ${{ matrix.profile }}
+          K3D_MATRIX_APP_DIGEST: ${{ needs.preflight.outputs.image_digest }}
+        run: |
+          set -o pipefail
+          bash clusters/platform.sh core
+          overlay="../../chaos/profiles/${PROFILE,,}.yaml"
+          kubectl --context k3d-self-healing -n argocd get application resilient-app -o json |
+            jq -e --arg sha "$GITHUB_SHA" --arg overlay "$overlay" --arg digest "$APP_DIGEST" \
+              '.spec.source.targetRevision == $sha and
+               .spec.source.helm.valueFiles[-1] == $overlay and
+               any(.spec.source.helm.parameters[]; .name == "image.digest" and .value == $digest)' >/dev/null
+      - name: Run measured trials
+        run: bash chaos/run-matrix.sh "$PROFILE" results/matrix
+      - name: Save runner context
+        if: always()
+        run: |
+          mkdir -p results/matrix/infra
+          printf 'commit=%s\nprofile=%s\nimage_digest=%s\n' "$GITHUB_SHA" "$PROFILE" "$APP_DIGEST" > results/matrix/infra/revision.txt
+          kubectl --context k3d-self-healing get pods -A > results/matrix/infra/pods.txt 2>&1 || true
+          kubectl --context k3d-self-healing -n argocd get applications > results/matrix/infra/applications.txt 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: matrix-profile-${{ matrix.profile }}
+          path: |
+            results/matrix/trials/
+            results/matrix/load/
+            results/matrix/infra/
+      - name: Remove the disposable cluster
+        if: always()
+        run: |
+          if command -v k3d >/dev/null; then
+            k3d cluster delete self-healing
+          fi
+
+  summarize:
+    needs: [preflight, measure]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: matrix-profile-*
+          path: results/matrix-shards
+      - name: Combine evidence and validate the matrix
+        run: |
+          set -o pipefail
+          python3 - <<'PY'
+          import shutil
+          from pathlib import Path
+
+          shards = Path("results/matrix-shards")
+          combined = Path("results/matrix")
+          trials = combined / "trials"
+          load = combined / "load"
+          trials.mkdir(parents=True)
+          load.mkdir()
+          for shard in sorted(shards.glob("matrix-profile-*")):
+              for source in sorted((shard / "trials").glob("*.json")):
+                  destination = trials / source.name
+                  if destination.exists():
+                      raise SystemExit(f"Duplicate trial file {source.name}")
+                  shutil.copyfile(source, destination)
+              for source in sorted((shard / "load").iterdir()) if (shard / "load").is_dir() else ():
+                  if source.is_dir():
+                      shutil.copytree(source, load / source.name)
+          PY
+          python3 chaos/matrix_evidence.py --results results/matrix/trials --load results/matrix/load |
+            tee results/matrix-summary.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('results/matrix-summary.json') != '' }}
+        with:
+          name: matrix-summary
+          path: results/matrix-summary.json

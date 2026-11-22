@@ -107,7 +107,14 @@ def sample_work(args, stop, probes, lock, observed_at):
         stop.wait(args.interval)
 
 
-def measure(args, results):
+def measure(args, results, *, run_id=None, window_metadata=None):
+    if run_id is not None and (len(run_id) != 32 or any(character not in "0123456789abcdef" for character in run_id)):
+        raise ValueError("Run ID must be 32 lowercase hexadecimal characters")
+    run_id = run_id or uuid.uuid4().hex
+    if ((results / f"{run_id}.json").exists() or (results / f"{run_id}.csv").exists()
+            or (window_metadata is not None and window_metadata.exists())):
+        raise FileExistsError("Trial output already exists")
+
     initial_pods = get_pods()
     baseline = next((pod for pod in initial_pods if pod["metadata"]["name"] == args.pod), None)
     if not pod_ready(baseline) or not app_container(baseline):
@@ -123,7 +130,6 @@ def measure(args, results):
     original_uids = {pod["metadata"]["uid"] for pod in initial_pods}
     target_uid = baseline["metadata"]["uid"]
     initial_restarts = app_container(baseline)["restartCount"]
-    run_id = uuid.uuid4().hex
     resource = (MESH_KINDS[args.scenario], f"resilient-app-{run_id}")
     manifest = mesh_manifest(args, resource[1]) if mesh else None
     start_wall = time.time()
@@ -256,6 +262,15 @@ def measure(args, results):
         writer = csv.DictWriter(stream, fieldnames=row)
         writer.writeheader()
         writer.writerow(row)
+    if window_metadata is not None:
+        window = {
+            "run_id": run_id,
+            "window_end_at": timestamp(window_end),
+            "recovery_observed": recovered_at is not None,
+        }
+        with window_metadata.open("x", encoding="utf-8") as stream:
+            json.dump(window, stream, indent=2)
+            stream.write("\n")
     print(json.dumps(row))
 
 
@@ -285,6 +300,8 @@ def main():
     run.add_argument("--work-url", default="http://127.0.0.1:8080")
     run.add_argument("--control-url", default="http://127.0.0.1:18080")
     run.add_argument("--pod", required=True, help="Ready resilient-app pod in the local demo namespace")
+    run.add_argument("--run-id", help="Use this ID to correlate the trial with its k6 capture")
+    run.add_argument("--window-metadata", type=Path, help="Write the observed trial window to a separate JSON file")
     run.add_argument("--timeout", type=float, default=90)
     run.add_argument("--interval", type=float, default=0.25)
     run.add_argument("--recovery-samples", type=int, default=3)
@@ -305,7 +322,7 @@ def main():
     ]
     if missing:
         parser.error("Record the manual smoke tests first: " + ", ".join(missing))
-    measure(args, args.results)
+    measure(args, args.results, run_id=args.run_id, window_metadata=args.window_metadata)
 
 
 if __name__ == "__main__":

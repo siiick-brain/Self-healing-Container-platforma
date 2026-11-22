@@ -1,4 +1,12 @@
-# Run local fault measurements
+# Run fault measurements
+
+## Hosted matrix
+
+Manually run the Hosted recovery matrix workflow after the three passing smoke logs are committed. Use app-level latency for all hosted profiles and Chaos Mesh for crash and memory exhaustion. The workflow tests the four profiles in parallel on disposable k3d clusters. Each profile uses the same published image digest and fixed k6 settings.
+
+The workflow uploads a separate artifact for each profile and validates the combined evidence as `matrix-summary`. A partial run fails the matrix check but retains the available artifacts. An unobserved recovery or undetected impact stays unresolved in the report. Run a bad-canary or Git revert exercise separately from the fault matrix.
+
+## Local smoke and trials
 
 Start the full k3d profile. Select a ready app pod from the output of the first command and set `POD` to its name. Run each smoke command separately and wait for it to finish.
 
