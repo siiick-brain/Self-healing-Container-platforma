@@ -36,6 +36,7 @@ done
 
 k6_version=$(k6 version)
 [[ $k6_version == 'k6 v0.58.0 '* ]] || fail "Expected k6 v0.58.0, found $k6_version"
+[[ ${APP_DIGEST:-} =~ ^sha256:[0-9a-f]{64}$ ]] || fail "Expected a pinned application image digest."
 context=k3d-self-healing
 kube=(kubectl --context "$context" --request-timeout=10s)
 demo=("${kube[@]}" -n demo)
@@ -63,7 +64,7 @@ fi
 other_workload=$("${demo[@]}" get "$other_kind" resilient-app --ignore-not-found -o name)
 [[ -z $other_workload ]] || fail "Unexpected $other_workload for profile $profile."
 workload=$("${demo[@]}" get "$kind" resilient-app -o json)
-jq -e --arg profile "$profile" '
+jq -e --arg profile "$profile" --arg digest "$APP_DIGEST" '
   def probe($path; $period; $failures):
     .httpGet.path == $path and .httpGet.port == "http" and
     .periodSeconds == $period and .failureThreshold == $failures and .timeoutSeconds == 1;
@@ -72,6 +73,7 @@ jq -e --arg profile "$profile" '
     (.spec.strategy.canary.canaryService == "resilient-app-canary" and
       any(.spec.strategy.canary.analysis.templates[]?; .templateName == "resilient-app-success"))) and
   any(.spec.template.spec.containers[]; .name == "app" and
+    (.image | endswith("@" + $digest)) and
     any(.env[]; .name == "CHAOS_ENABLED" and .value == "true") and
     (if $profile == "A" then .livenessProbe == null and .readinessProbe == null
      elif $profile == "A2" then (.livenessProbe | probe("/healthz"; 10; 3)) and
