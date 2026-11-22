@@ -1,5 +1,7 @@
 import http from 'k6/http';
 
+http.setResponseCallback(http.expectedStatuses(200));
+
 export const options = {
   scenarios: {
     work: {

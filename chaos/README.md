@@ -1,17 +1,36 @@
 # Run local fault measurements
 
-Use the k3d lab. First run each experiment manually against the demo and save the output as pod.txt, network.txt and stress.txt under results/chaos-smoke. Record a failed smoke check and its fallback in the same file. Have the owner commit the smoke evidence. Remove each Chaos Mesh object before starting the next experiment.
-
-Apply one of the overlays in profiles after the base k3d values. Change the values in the local GitOps source for a managed run so reconciliation preserves the test configuration.
-
-Keep constant k6 traffic running while measuring and export its summary for independent load evidence.
+Start the full k3d profile. Select a ready app pod from the output of the first command and set `POD` to its name. Run each smoke command separately and wait for it to finish.
 
 ```bash
-k6 run --summary-export results/k6-work.json k6/work.js
-python3 chaos/measure.py run crash B --injection-type chaos-mesh
+kubectl --context k3d-self-healing -n demo get pods -l app.kubernetes.io/name=resilient-app
+POD='<ready pod name>'
+python3 chaos/smoke.py network --pod "$POD"
+python3 chaos/smoke.py stress --pod "$POD"
+python3 chaos/smoke.py pod --pod "$POD"
+```
+
+Each check writes its live result to `results/chaos-smoke/` and removes the specific experiment it started. Exit code 2 means cleanup needs verification before another fault. For any failed check, verify the recorded fallback in the lab and add its evidence to the same log. An app-level fallback has a different failure mechanism, so report it as such. Commit the three smoke logs before starting the matrix. Select a new ready pod after PodChaos replaces the original.
+
+Apply one of the overlays in `profiles/` after the base k3d values. Change the values in the local GitOps source for a managed run so reconciliation preserves the test configuration. Verify that the workload is ready and its probe and rollout settings match the overlay. For each of crash, latency and leak, collect 10 trials each for A and A2 and 20 each for B and C. Keep the fault mechanism and load settings consistent within each condition and record them alongside the results.
+
+Choose a ready `resilient-app` pod in the `demo` namespace. Start k6 in one terminal before the trial and leave it running through recovery. Use a fresh output directory for each trial. For example, run this in the first terminal.
+
+```bash
+mkdir -p results/load/B-crash-01
+DURATION=3m k6 run --out json=results/load/B-crash-01/points.json \
+  --summary-export results/load/B-crash-01/summary.json k6/work.js
+```
+
+While k6 is producing requests, run the following in the second terminal with `POD` set to the chosen name.
+
+```bash
+set -o pipefail
+python3 chaos/measure.py run crash B --injection-type chaos-mesh --pod "$POD" \
+  | tee results/load/B-crash-01/trial.log
 python3 chaos/measure.py summary
 ```
 
-For an app-level fallback, open a pod port-forward on localhost port 18080 and pass the selected pod name with --pod. Use --injection-type app-level. The harness checks the ingress work endpoint independently of the control request.
+For an app-level fallback, open a port-forward to the selected pod on localhost port 18080. Pass the same pod name with `--pod` and use `--injection-type app-level`. The runner checks the ingress work endpoint independently of the control request. Both latency modes hold the fault for 15 seconds. For a crash trial using PodChaos, choose a new ready target for the next run if the original was replaced.
 
-A recovery sample is a successful work probe after detection. The CSV reports loss among harness probes. Retain k6 summaries for the constant-load client?s own loss and dropped iterations. If redundancy masks the fault, recovery time stays empty unless the harness observes a failed health probe or a change in the selected pod.
+The runner requires a Chaos Mesh controller record of successful injection for a Mesh trial. Recovery requires a ready target or its replacement and consecutive successful ingress probes after the timed fault clears. A memory trial requires an `OOMKilled` result for the target app container. When both ingress and pod health appear normal throughout the trial, recovery time stays empty. The CSV reports loss among harness probes. Use the timestamped k6 output and the trial ID printed in `trial.log` to correlate client request failures and dropped iterations with the measurement window.
