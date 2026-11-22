@@ -28,10 +28,29 @@ IFS=$'\t' read -r node pod pod_uid <<< "$target"
 "${kube[@]}" get node "$node" -o json > "$evidence/node-before.json"
 jq -e '.spec.unschedulable != true' "$evidence/node-before.json" >/dev/null
 
+kubectl --context k3d-self-healing -n demo get endpointslices \
+  -l kubernetes.io/service-name=resilient-app --watch --output-watch-events -o json \
+  > "$evidence/endpointslice-watch.jsonstream" 2> "$evidence/endpointslice-watch.log" &
+watch_pid=$!
+load_pid=
+started=
+cleanup() {
+  kill "$watch_pid" 2>/dev/null || true
+  wait "$watch_pid" 2>/dev/null || true
+  if [[ -n $load_pid ]]; then
+    kill "$load_pid" 2>/dev/null || true
+    wait "$load_pid" 2>/dev/null || true
+  fi
+  if [[ -n $started ]]; then
+    "${kube[@]}" -n ingress-nginx logs -l app.kubernetes.io/component=controller \
+      --timestamps --prefix --since-time="$started" --tail=-1 > "$evidence/ingress.log" 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+
 WORK_URL=http://127.0.0.1:8080 RATE=10 DURATION=5m k6 run --no-color --quiet \
   --out "json=$evidence/k6-points.json" k6/work.js > "$evidence/k6.log" 2>&1 &
 load_pid=$!
-trap 'kill "$load_pid" 2>/dev/null || true; wait "$load_pid" 2>/dev/null || true' EXIT
 deadline=$((SECONDS + 20))
 until grep -Eq '"type":"Point".*"metric":"http_reqs"|"metric":"http_reqs".*"type":"Point"' \
     "$evidence/k6-points.json" 2>/dev/null; do
@@ -54,7 +73,7 @@ finished=$(date -u +%FT%T.%NZ)
 "${kube[@]}" -n demo get pods -l "$selector" -o json > "$evidence/pods-after.json"
 "${kube[@]}" -n demo get pdb resilient-app -o json > "$evidence/pdb-after.json"
 wait "$load_pid"
-trap - EXIT
+load_pid=
 
 python3 - "$evidence" "$started" "$finished" "$node" "$pod_uid" "$drain_status" <<'PY'
 from datetime import datetime

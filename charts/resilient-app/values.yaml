@@ -5,6 +5,7 @@ image:
   pullPolicy: IfNotPresent
 
 replicaCount: 3
+preStopDelaySeconds: 0
 
 service:
   port: 8080

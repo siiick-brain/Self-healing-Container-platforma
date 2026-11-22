@@ -10,4 +10,4 @@ gh workflow run k3s-upgrade.yml --repo siiick-brain/Self-healing-Container-platf
 
 Download the `k3s-rebuild-baseline` and `k3s-rebuild-candidate` artifacts from the run. Each records the Kubernetes server and node versions, Argo CD application status, `/work` via ingress, allowed and denied network paths, Prometheus scrape health, and resource use. The comparison also checks that both clusters actually ran the same app image digest. Save the resulting proof in [results](../results/).
 
-Run the [node drain check](../clusters/tests/drain-under-load.sh) as a separate scenario to verify service availability under k6 load while the agent drains.
+Run the [node drain check](../clusters/tests/drain-under-load.sh) as a separate scenario to verify service availability under k6 load while the agent drains. The first hosted drain restored three ready replicas and uncordoned the node. Four of 33 requests timed out during eviction, below the 99.5% availability target. [Drain evidence](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45063333678/artifacts/14769814346)

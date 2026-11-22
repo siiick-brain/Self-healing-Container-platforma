@@ -105,6 +105,10 @@ ready_target() {
     pod=$("${demo[@]}" get replicasets,pods -l "$selector" -o json |
       jq -r --arg owner "$workload_uid" --arg prefix "$context-" --arg preferred "$preferred" \
         --argjson template "$template" '
+          def probe_defaults:
+            if . == null then null else (.successThreshold //= 1) | (.httpGet.scheme //= "HTTP") end;
+          def comparable:
+            .livenessProbe |= probe_defaults | .readinessProbe |= probe_defaults;
           def owned_by($uids):
             any(.metadata.ownerReferences[]?; .controller and (.uid as $uid | $uids | index($uid) != null));
           [.items[] | select(.kind == "ReplicaSet" and owned_by([$owner])) | .metadata.uid] as $sets |
@@ -112,7 +116,7 @@ ready_target() {
           select(length == 3 and all(.[]; owned_by($sets) and
             ((.spec.nodeName // "") | startswith($prefix)) and
             any(.spec.containers[]; .name == "app" and
-              ({image, livenessProbe, readinessProbe, resources} == $template)) and
+              (({image, livenessProbe, readinessProbe, resources} | comparable) == ($template | comparable))) and
             any(.status.conditions[]?; .type == "Ready" and .status == "True") and
             any(.status.containerStatuses[]?; .name == "app" and .ready))) |
           sort_by(.metadata.creationTimestamp, .metadata.name)[] |
@@ -125,6 +129,7 @@ ready_target() {
     sleep 2
   done
   echo "Profile $profile did not have three ready target replicas (requested: ${preferred:-any})." >&2
+  "${demo[@]}" get "$kind",replicasets,pods -l "$selector" -o wide >&2 || true
   return 1
 }
 

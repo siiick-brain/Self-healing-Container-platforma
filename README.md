@@ -47,7 +47,15 @@ The [core profile](clusters/gitops/core/) provides GitOps, ingress, workload pol
 | Slow response | The target pod response took 1.504 seconds with the fault active. [Latency log](results/chaos-smoke/network.txt) |
 | Memory exhaustion | All 26 ingress smoke probes after controller confirmation were healthy. [StressChaos log](results/chaos-smoke/stress.txt) |
 
-The smoke observations use a single fault check per scenario. Comparative MTTR and request loss remain pending after the [first matrix run stopped before measurement](docs/postmortems/2026-11-22-hosted-recovery-matrix.md). Hosted latency trials use the app-level control after [NetworkChaos failed to configure iptables](results/chaos-smoke/network-runtime-failure.txt). [NetworkChaos postmortem](docs/postmortems/2026-11-22-hosted-network-chaos.md)
+The [third hosted matrix run](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45064244265) validated 120 of 180 trials across profiles A, A2 and B. Profile C still needs 60 trials. Each cell below shows median observed recovery time and the k6 request failure rate during the observation windows.
+
+| Scenario | A (10 trials) | A2 (10 trials) | B (20 trials) |
+| --- | --- | --- | --- |
+| Crash | 3.10 s / 12.31% | 2.72 s / 9.65% | 3.12 s / 13.99% |
+| Slow response | 16.04 s / 30.80% | 16.04 s / 30.85% | 16.85 s / 11.57% |
+| Memory exhaustion | 15.84 s / 0% | 15.81 s / 0% | 15.88 s / 0% |
+
+Hosted latency trials use the app-level control after NetworkChaos failed to configure iptables. [NetworkChaos postmortem](docs/postmortems/2026-11-22-hosted-network-chaos.md) · [Matrix postmortem](docs/postmortems/2026-11-22-hosted-recovery-matrix.md) · [Partial matrix summary](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45064244265/artifacts/14775560729)
 
 ## OpenShift
 

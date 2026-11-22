@@ -2,6 +2,11 @@ name: Hosted recovery matrix
 
 on:
   workflow_dispatch:
+    inputs:
+      resume_profile_c:
+        description: Complete profile C using the unchanged lab revision and the 120 trials from run 45064244265
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -12,6 +17,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       image_digest: ${{ steps.pin.outputs.digest }}
+      gitops_revision: ${{ steps.pin.outputs.revision }}
     steps:
       - uses: actions/checkout@v4
       - name: Require committed fault evidence
@@ -27,13 +33,23 @@ jobs:
           done
       - name: Pin the published app image for all profiles
         id: pin
+        env:
+          RESUME_C: ${{ inputs.resume_profile_c }}
         run: |
-          image=ghcr.io/siiick-brain/resilient-app:main
+          repository=ghcr.io/siiick-brain/resilient-app
+          image="$repository:main"
+          revision="$GITHUB_SHA"
+          if [[ $RESUME_C == true ]]; then
+            image="$repository@sha256:23a37dd47ff1c53cfcc9f57b74fe41e0b9f62098ff9837d62996f001188aceaf"
+            revision=7fa3c0cdf6cced5d18463b35da0c8a57b5b7db27
+          fi
           docker pull "$image"
           ref=$(docker image inspect --format '{{index .RepoDigests 0}}' "$image")
           digest=${ref#*@}
-          [[ $ref == ghcr.io/siiick-brain/resilient-app@* && $digest =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ $ref == "$repository"@* && $digest =~ ^sha256:[0-9a-f]{64}$ ]]
+          if [[ $RESUME_C == true ]]; then [[ $ref == "$image" ]]; fi
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
 
   measure:
     needs: preflight
@@ -42,11 +58,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [A, A2, B, C]
+        profile: ${{ fromJSON(inputs.resume_profile_c && '["C"]' || '["A","A2","B","C"]') }}
     env:
       K3D_AGENTS: '2'
       K3D_NODE_EXPORTER: 'false'
-      GITOPS_REVISION: ${{ github.sha }}
+      GITOPS_REVISION: ${{ needs.preflight.outputs.gitops_revision }}
       PROFILE: ${{ matrix.profile }}
       APP_DIGEST: ${{ needs.preflight.outputs.image_digest }}
     steps:
@@ -97,7 +113,7 @@ jobs:
           deadline=$((SECONDS + 300))
           while (( SECONDS < deadline )); do
             if "${app[@]}" -o json |
-              jq -e --arg sha "$GITHUB_SHA" --arg overlay "$overlay" --arg digest "$APP_DIGEST" '
+              jq -e --arg sha "$GITOPS_REVISION" --arg overlay "$overlay" --arg digest "$APP_DIGEST" '
                 def matches_profile:
                   .targetRevision == $sha and
                   .helm.valueFiles[-1] == $overlay and
@@ -111,7 +127,7 @@ jobs:
             fi
             sleep 5
           done
-          echo "Argo CD did not reconcile profile $PROFILE on $GITHUB_SHA." >&2
+          echo "Argo CD did not reconcile profile $PROFILE on $GITOPS_REVISION." >&2
           "${app[@]}" -o json | jq '{desired: .spec.source, sync: .status.sync,
             health: .status.health, conditions: .status.conditions}' >&2
           exit 1
@@ -121,7 +137,8 @@ jobs:
         if: always()
         run: |
           mkdir -p results/matrix/infra
-          printf 'commit=%s\nprofile=%s\nimage_digest=%s\n' "$GITHUB_SHA" "$PROFILE" "$APP_DIGEST" > results/matrix/infra/revision.txt
+          printf 'commit=%s\ngitops_revision=%s\nprofile=%s\nimage_digest=%s\n' \
+            "$GITHUB_SHA" "$GITOPS_REVISION" "$PROFILE" "$APP_DIGEST" > results/matrix/infra/revision.txt
           kubectl --context k3d-self-healing get pods -A > results/matrix/infra/pods.txt 2>&1 || true
           kubectl --context k3d-self-healing -n argocd get applications > results/matrix/infra/applications.txt 2>&1 || true
           kubectl --context k3d-self-healing --request-timeout=15s -n argocd get events \
@@ -146,16 +163,32 @@ jobs:
     if: ${{ !cancelled() && needs.preflight.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: matrix-profile-*
           path: results/matrix-shards
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_profile_c
+        with:
+          github-token: ${{ github.token }}
+          run-id: '45064244265'
+          pattern: matrix-profile-[AB]*
+          path: results/matrix-shards
       - name: Combine evidence and validate the matrix
+        env:
+          APP_DIGEST: ${{ needs.preflight.outputs.image_digest }}
+          GITOPS_REVISION: ${{ needs.preflight.outputs.gitops_revision }}
+          RESUME_C: ${{ inputs.resume_profile_c }}
         run: |
           set -o pipefail
           python3 - <<'PY'
+          import json
+          import os
           import shutil
           from pathlib import Path
 
@@ -165,7 +198,19 @@ jobs:
           load = combined / "load"
           trials.mkdir(parents=True)
           load.mkdir()
+          provenance = {}
           for shard in sorted(shards.glob("matrix-profile-*")):
+              profile = shard.name.removeprefix("matrix-profile-")
+              metadata = dict(line.split("=", 1) for line in (shard / "infra/revision.txt").read_text().splitlines())
+              revision = metadata.get("gitops_revision", metadata["commit"])
+              if (profile != metadata["profile"] or revision != os.environ["GITOPS_REVISION"]
+                  or metadata["image_digest"] != os.environ["APP_DIGEST"]):
+                  raise SystemExit(f"GitOps revision or image differs for {shard.name}")
+              reused = os.environ["RESUME_C"] == "true" and profile != "C"
+              if metadata["commit"] != (revision if reused else os.environ["GITHUB_SHA"]):
+                  raise SystemExit(f"Workflow revision differs for {shard.name}")
+              provenance[profile] = {**metadata, "gitops_revision": revision,
+                                     "run_id": "45064244265" if reused else os.environ["GITHUB_RUN_ID"]}
               for source in sorted((shard / "trials").glob("*.json")):
                   destination = trials / source.name
                   if destination.exists():
@@ -174,6 +219,7 @@ jobs:
               for source in sorted((shard / "load").iterdir()) if (shard / "load").is_dir() else ():
                   if source.is_dir():
                       shutil.copytree(source, load / source.name)
+          Path("results/matrix-provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
           PY
           python3 chaos/matrix_evidence.py --results results/matrix/trials --load results/matrix/load |
             tee results/matrix-summary.json
@@ -181,4 +227,6 @@ jobs:
         if: ${{ always() && hashFiles('results/matrix-summary.json') != '' }}
         with:
           name: matrix-summary
-          path: results/matrix-summary.json
+          path: |
+            results/matrix-summary.json
+            results/matrix-provenance.json

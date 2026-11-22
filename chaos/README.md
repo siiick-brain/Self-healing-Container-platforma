@@ -6,6 +6,8 @@ Manually run the Hosted recovery matrix workflow after the three passing smoke l
 
 The workflow uploads a separate artifact for each profile and validates the combined evidence as `matrix-summary`. A partial run fails the matrix check but retains the available artifacts. An unobserved recovery or undetected impact stays unresolved in the report. Run a bad-canary or Git revert exercise separately from the fault matrix.
 
+The `resume_profile_c` input reruns only C at the original GitOps revision and image digest. It adds the 120 validated A, A2, and B trials from run `45064244265` and checks the revision and image for each shard before validating the full matrix again. The `matrix-provenance.json` file identifies which run supplied each profile. Use the default input to collect a fresh four-profile matrix. [Original run](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45064244265)
+
 ## Local smoke and trials
 
 Start the full k3d profile. Select a ready app pod from the output of the first command and set `POD` to its name. Run each smoke command separately and wait for it to finish.

@@ -44,8 +44,8 @@ if ! "${kube[@]}" get --raw=/readyz >/dev/null 2>&1; then
   sed "s/^agents: 3$/agents: $agents/" clusters/k3d.yaml > "$config"
   k3d cluster create --config "$config"
   if (( ${#redis_options[@]} )); then
-    # Preload the pinned Docker Official Image so each node can start without another registry pull.
-    redis_ref="$redis_repository@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952"
+    # Import the Linux amd64 manifest without references to other platforms in the image index.
+    redis_ref="$redis_repository@sha256:519f0189dfdee3bc0bad61fb265fe73d864b5c64020e6579ad48a45c49965635"
     docker pull "$redis_ref"
     docker tag "$redis_ref" "$redis_repository:$redis_tag"
     k3d image import -c "$name" "$redis_repository:$redis_tag"
