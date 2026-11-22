@@ -14,4 +14,4 @@ For the full profile provision the MinIO secrets described in the receiver runbo
 
 Drain an agent while a k6 run is active and save the output under results. For a replacement-cluster upgrade check, change the pinned k3s image in a review branch and rebuild the disposable cluster. Record cluster version, pod health and the network policy smoke output for each image. This tests a clean reinstall with the new version.
 
-GitOps pulls from the published repository. Use `GITOPS_REPO` and `GITOPS_REVISION` to select the root applications in a test repository. Child applications in the manifests default to the project main branch.
+GitOps pulls from the published repository. Use `GITOPS_REPO` and `GITOPS_REVISION` to select the repository and revision for the root and its project-owned child applications. Vendor charts keep their pinned versions.

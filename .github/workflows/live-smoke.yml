@@ -10,6 +10,8 @@ on:
       - 'charts/**'
       - 'ops/receiver/**'
       - 'alerts/**'
+      - 'dashboards/**'
+      - 'scripts/capture-grafana.sh'
   workflow_dispatch:
 
 permissions:
@@ -18,10 +20,11 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       K3D_AGENTS: '2'
       K3D_NODE_EXPORTER: 'false'
+      K3D_CI_GRAFANA_VIEWER: 'true'
       GITOPS_REVISION: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
@@ -69,12 +72,51 @@ jobs:
           kubectl --context k3d-self-healing -n ops create secret generic diagnostics-minio \
             --from-literal=access-key="$user" --from-literal=secret-key="$password"
       - name: Start and verify full
+        id: full
         if: ${{ !cancelled() && steps.full_dependencies.outcome == 'success' }}
         run: |
           set -o pipefail
           bash clusters/platform.sh full 2>&1 | tee results/ci/up-full.txt
           kubectl --context k3d-self-healing -n demo get analysistemplate resilient-app-success |
             tee results/ci/canary-template.txt
+      - name: Verify diagnostics storage
+        if: ${{ !cancelled() && steps.full.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          kubectl --context k3d-self-healing -n ops exec -i deployment/diagnostics-receiver -- python - <<'PY' | tee results/ci/diagnostics-storage.txt
+          import boto3
+          from botocore.config import Config
+
+          s3 = boto3.client(
+              "s3", endpoint_url="http://minio.storage.svc:9000", region_name="us-east-1",
+              config=Config(s3={"addressing_style": "path"}, connect_timeout=5, read_timeout=10),
+          )
+          bucket = "diagnostics"
+          key = "ci/storage-smoke"
+          payload = b"diagnostics storage smoke"
+          s3.create_bucket(Bucket=bucket)
+          s3.put_object(Bucket=bucket, Key=key, Body=payload)
+          try:
+              assert s3.get_object(Bucket=bucket, Key=key)["Body"].read() == payload
+          finally:
+              s3.delete_object(Bucket=bucket, Key=key)
+          print("Receiver credentials can write and read the diagnostics bucket.")
+          PY
+      - name: Capture Grafana evidence
+        id: grafana
+        if: ${{ !cancelled() && steps.full.outcome == 'success' }}
+        timeout-minutes: 8
+        run: bash scripts/capture-grafana.sh "$RUNNER_TEMP/grafana-evidence"
+      - name: Upload Grafana evidence
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && steps.grafana.outcome == 'success' }}
+        with:
+          name: grafana-evidence
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/grafana-evidence/grafana-red.png
+            ${{ runner.temp }}/grafana-evidence/grafana-slo.png
+            ${{ runner.temp }}/grafana-evidence/grafana-prometheus.json
       - name: Capture diagnostics
         if: always()
         run: |

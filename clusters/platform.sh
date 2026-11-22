@@ -32,7 +32,7 @@ helm upgrade --install argocd argo-cd --repo https://argoproj.github.io/argo-hel
 repo=${GITOPS_REPO:-https://github.com/siiick-brain/Self-healing-Container-platforma.git}
 revision=${GITOPS_REVISION:-main}
 apply_root() {
-  local source_config project_apps
+  local source_config project_apps helm_parameters=
   case "$1" in
     core) project_apps='platform-policy|resilient-app' ;;
     full) project_apps='diagnostics-receiver|grafana-dashboards|minio|observability|vpa-recommendation' ;;
@@ -54,7 +54,28 @@ apply_root() {
 EOF
   )
   if [[ $1 == core && ${K3D_NODE_EXPORTER:-true} == false ]]; then
-    source_config+=$'\n'$(cat <<'EOF'
+    helm_parameters=$(cat <<'EOF'
+                - name: nodeExporter.enabled
+                  value: 'false'
+EOF
+    )
+  fi
+  if [[ $1 == core && ${GITHUB_ACTIONS:-false} == true && ${K3D_CI_GRAFANA_VIEWER:-false} == true ]]; then
+    helm_parameters+=$'\n'$(cat <<'EOF'
+                - name: grafana.env.GF_AUTH_ANONYMOUS_ENABLED
+                  value: 'true'
+                  forceString: true
+                - name: grafana.env.GF_AUTH_ANONYMOUS_ORG_ROLE
+                  value: Viewer
+                - name: grafana.service.type
+                  value: ClusterIP
+                - name: grafana.ingress.enabled
+                  value: 'false'
+EOF
+    )
+  fi
+  if [[ -n $helm_parameters ]]; then
+    source_config+=$'\n'$(cat <<EOF
         - target:
             group: argoproj.io
             kind: Application
@@ -63,8 +84,7 @@ EOF
             - op: add
               path: /spec/source/helm/parameters
               value:
-                - name: nodeExporter.enabled
-                  value: 'false'
+$helm_parameters
 EOF
     )
   fi
