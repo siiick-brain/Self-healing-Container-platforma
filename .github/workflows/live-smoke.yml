@@ -130,10 +130,13 @@ jobs:
           kube=(kubectl --context k3d-self-healing -n demo)
           selector=app.kubernetes.io/name=resilient-app
           failed=0
-          for fault in network stress pod; do
+          for fault in network pod stress; do
             "${kube[@]}" wait pod -l "$selector" --for=condition=Ready --timeout=90s
             pod=$("${kube[@]}" get pod -l "$selector" -o jsonpath='{.items[0].metadata.name}')
             if python3 chaos/smoke.py "$fault" --pod "$pod"; then
+              if [[ $fault == pod ]]; then
+                sleep 35
+              fi
               continue
             else
               result=$?
@@ -144,6 +147,53 @@ jobs:
             fi
           done
           exit "$failed"
+      - name: Verify the OOM diagnostics archive
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.verify_faults && steps.full.outcome == 'success' }}
+        timeout-minutes: 3
+        run: |
+          set -o pipefail
+          if ! grep -q 'PASS: Chaos Mesh smoke verified' results/chaos-smoke/stress.txt; then
+            echo 'Archive check skipped because the stress smoke did not pass.' | tee results/ci/oom-archive.txt
+            exit 0
+          fi
+          uid=$(sed -n 's/.* target_uid=\([^ ]*\) .*/\1/p' results/chaos-smoke/stress.txt | tail -n 1)
+          test -n "$uid"
+          kubectl --context k3d-self-healing -n ops exec -i deployment/diagnostics-receiver -- python - "$uid" <<'PY' | tee results/ci/oom-archive.txt
+          import gzip
+          import json
+          import sys
+          import time
+
+          import boto3
+          from botocore.config import Config
+
+          uid = sys.argv[1]
+          s3 = boto3.client(
+              "s3", endpoint_url="http://minio.storage.svc:9000", region_name="us-east-1",
+              config=Config(s3={"addressing_style": "path"}, connect_timeout=5, read_timeout=10),
+          )
+          bucket = "diagnostics"
+          deadline = time.monotonic() + 100
+          while time.monotonic() < deadline:
+              objects = s3.list_objects_v2(Bucket=bucket, Prefix=f"oom/{uid}/").get("Contents", [])
+              if objects:
+                  key = objects[0]["Key"]
+                  body = s3.get_object(Bucket=bucket, Key=key)["Body"].read()
+                  record = json.loads(gzip.decompress(body))
+                  assert record["pod_uid"] == uid and record["termination"]["reason"] == "OOMKilled"
+                  assert isinstance(record["previous_logs"], str) and isinstance(record["events"], list)
+                  print(json.dumps({
+                      "object": key,
+                      "pod_uid": uid,
+                      "termination_reason": "OOMKilled",
+                      "previous_log_bytes": len(record["previous_logs"].encode()),
+                      "events_recorded": len(record["events"]),
+                  }))
+                  break
+              time.sleep(4)
+          else:
+              raise SystemExit("No receiver archive matched the OOM-killed pod.")
+          PY
       - name: Capture diagnostics
         if: always()
         run: |
