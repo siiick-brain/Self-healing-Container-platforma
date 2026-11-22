@@ -1,6 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+check_k6() {
+  local version
+  version=$(k6 version) || return 1
+  # The official v0.58.0 assets embed this prerelease display version.
+  if [[ $version != 'k6 v1.0.0-rc1 (commit/02fdc80b36, '* ]]; then
+    printf 'Expected the k6 v0.58.0 build at 02fdc80b36; found %s\n' "$version" >&2
+    return 1
+  fi
+}
+
+if [[ ${1:-} == --check-k6 && $# == 1 ]]; then
+  check_k6
+  exit 0
+fi
+
 if [[ $# != 2 || -z ${2:-} ]]; then
   echo "Usage: bash chaos/run-matrix.sh A|A2|B|C OUTPUT_DIR" >&2
   exit 2
@@ -34,8 +49,7 @@ for fault in pod stress network; do
   fi
 done
 
-k6_version=$(k6 version)
-[[ $k6_version == 'k6 v0.58.0 '* ]] || fail "Expected k6 v0.58.0, found $k6_version"
+check_k6
 [[ ${APP_DIGEST:-} =~ ^sha256:[0-9a-f]{64}$ ]] || fail "Expected a pinned application image digest."
 context=k3d-self-healing
 kube=(kubectl --context "$context" --request-timeout=10s)

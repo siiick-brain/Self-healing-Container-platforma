@@ -12,4 +12,4 @@ Validate PodChaos, NetworkChaos and StressChaos manually before the matrix. Save
 
 Apply configurations A with probes disabled, A2 with default probes, B with tuned probes and C with tuned probes plus the canary strategy. Record MTTR and failure percentages per scenario per configuration. Keep rollback and canary-abort reports separate. Store the measurements in [results](../results/).
 
-Measured results are pending live runs.
+The [hosted smoke evidence](../results/chaos-smoke/) records successful PodChaos replacement, a StressChaos OOM kill followed by a restart, and a timed app-level slowdown after the hosted NetworkChaos check failed. Comparable recovery times and request-loss results are pending the [hosted matrix](../chaos/README.md#hosted-matrix).

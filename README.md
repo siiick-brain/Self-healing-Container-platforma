@@ -1,35 +1,63 @@
 # Self-healing container platform
 
-A bad deploy can interrupt service or return failed requests until healthy traffic resumes. This project measures the difference between basic probes, tuned probes and an automated canary abort on local Kubernetes.
+A bad deploy can send requests to an unhealthy replica and consume the service's error budget. This k3d lab compares [basic and tuned probes](docs/CHAOS.md) and [canary aborts](docs/adr/rollouts.md) to find out how long recovery takes and how much traffic is affected.
 
 ## Results
 
 | Scenario | Evidence |
 | --- | --- |
-| Crash | Pending a recorded cluster run |
-| Slow response | Pending a recorded cluster run |
-| Memory exhaustion | Pending a recorded cluster run |
-| GitOps rollback and canary abort | Pending separate recorded runs |
+| Pod crash | PodChaos removed the target pod and a ready replacement appeared. [PodChaos log](results/chaos-smoke/pod.txt) |
+| Slow response | The app-level fault delayed the selected pod, then reset successfully. [Latency log](results/chaos-smoke/network.txt) |
+| Memory exhaustion | StressChaos triggered an OOM kill and the target container restarted. [StressChaos log](results/chaos-smoke/stress.txt) |
+| Diagnostics | MinIO held an archive for the terminated pod UID. [Archive record](results/chaos-smoke/oom-archive.json) |
+| GitOps rollback and canary abort | Separate results pending. [Delivery design](docs/adr/rollouts.md) |
 
-Results and raw run outputs belong in [results](results/). See the [experiment procedure](docs/CHAOS.md).
+The [live smoke run](results/chaos-smoke/) verified fault injection and cleanup. The [recovery matrix](chaos/README.md#hosted-matrix) measures recovery time and request loss across the probe and rollout profiles.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  GitHub --> ArgoCD[Argo CD]
-  ArgoCD --> Demo[App workload]
-  Load[k6] --> Ingress[NGINX ingress] --> Demo
-  Prometheus --> Demo
-  Prometheus --> Grafana
-  Prometheus --> Alertmanager
-  Alertmanager --> Receiver[Diagnostics receiver]
-  Receiver --> MinIO
+  Git[Git repository]
+  Load[k6]
+
+  subgraph Lab[Local k3d cluster]
+    Argo[Argo CD]
+    Ingress[NGINX ingress]
+    App[App workload]
+    Prom[Prometheus]
+    Grafana[Grafana]
+    Archive[Diagnostics receiver and MinIO]
+  end
+
+  Git -->|desired state| Argo -->|reconciles| App
+  Load -->|requests| Ingress -->|/work| App
+  Prom -->|scrapes /metrics| App
+  Grafana -->|queries| Prom
+  Prom -.->|OOM alert via Alertmanager| Archive
 ```
+
+The [core profile](clusters/gitops/core/) provides GitOps, ingress, workload policy and monitoring. The [full profile](clusters/gitops/full/) adds fault injection, automated diagnostics, rollout analysis and resource recommendations. [Architecture and boundaries](docs/ARCHITECTURE.md)
+
+## Failure scenarios
+
+| Scenario | Hosted smoke observation |
+| --- | --- |
+| Crash | All 4 ingress smoke probes after controller confirmation were healthy. [PodChaos log](results/chaos-smoke/pod.txt) |
+| Slow response | The target pod response took 1.504 seconds with the fault active. [Latency log](results/chaos-smoke/network.txt) |
+| Memory exhaustion | All 26 ingress smoke probes after controller confirmation were healthy. [StressChaos log](results/chaos-smoke/stress.txt) |
+
+The smoke observations use a single fault check per scenario. Comparative MTTR and request loss remain pending after the [first matrix run stopped before measurement](docs/postmortems/2026-11-22-hosted-recovery-matrix.md). Hosted latency trials use the app-level control after [NetworkChaos failed to configure iptables](results/chaos-smoke/network-runtime-failure.txt). [NetworkChaos postmortem](docs/postmortems/2026-11-22-hosted-network-chaos.md)
 
 ## OpenShift
 
-The [comparison](docs/OPENSHIFT_COMPARISON.md) documents the features to verify on OpenShift.
+The [OpenShift comparison](docs/OPENSHIFT_COMPARISON.md) is based on configuration and documentation. Runtime checks remain pending.
+
+| Area | k3d | OpenShift to verify |
+| --- | --- | --- |
+| Pod admission | Pod security and Kyverno | SCC admission and the assigned pod UID |
+| External access | NGINX ingress | Route through the OpenShift router |
+| Monitoring | Prometheus and Grafana | User workload monitoring availability |
 
 ## Quick start
 
@@ -43,7 +71,16 @@ curl -fsS http://127.0.0.1:8080/work
 
 ## SLOs
 
-See the [SLO policy](docs/SLO.md) and [platform contracts](CONTRACTS.md).
+The [SLO policy](docs/SLO.md) sets targets for availability and p95 latency. The [Grafana smoke evidence](results/observability/) shows that the dashboards rendered with live Prometheus samples. The capture covers a short lab window.
+
+<details>
+<summary>Grafana dashboards</summary>
+
+![Grafana RED dashboard with request rate, errors, latency, and per-pod memory](results/observability/grafana-red.png)
+
+![Grafana SLO dashboard with observed availability and error budget burn](results/observability/grafana-slo.png)
+
+</details>
 
 ## Cost
 

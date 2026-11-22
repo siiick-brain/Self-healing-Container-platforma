@@ -1,0 +1,65 @@
+name: Canary abort proof
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GITOPS_REVISION: ${{ github.sha }}
+      K3D_AGENTS: '2'
+      K3D_NODE_EXPORTER: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.19.0
+      - name: Install the pinned k3d and k6 tools
+        run: |
+          set -o pipefail
+          cd "$RUNNER_TEMP"
+          bin="$RUNNER_TEMP/canary-bin"
+          mkdir -p "$bin"
+          k3d_release=https://github.com/k3d-io/k3d/releases/download/v5.8.3
+          curl -fsSLO "$k3d_release/k3d-linux-amd64"
+          echo 'dbaa79a76ace7f4ca230a1ff41dc7d8a5036a8ad0309e9c54f9bf3836dbe853e  k3d-linux-amd64' | sha256sum --check --strict
+          install -m 0755 k3d-linux-amd64 "$bin/k3d"
+          archive=k6-v0.58.0-linux-amd64.tar.gz
+          k6_release=https://github.com/grafana/k6/releases/download/v0.58.0
+          curl -fsSLO "$k6_release/$archive"
+          curl -fsSLO "$k6_release/k6-v0.58.0-checksums.txt"
+          awk -v archive="$archive" '$2 == archive || $2 == "*" archive' k6-v0.58.0-checksums.txt | sha256sum --check --strict
+          tar -xzf "$archive"
+          install -m 0755 k6-v0.58.0-linux-amd64/k6 "$bin/k6"
+          echo "$bin" >> "$GITHUB_PATH"
+          if (( $(sysctl -n fs.inotify.max_user_instances) < 1024 )); then
+            sudo sysctl -w fs.inotify.max_user_instances=1024
+          fi
+      - name: Start core and measure controller abort
+        run: |
+          set -o pipefail
+          mkdir -p results/ci/canary
+          bash clusters/platform.sh core | tee results/ci/canary/platform.log
+          bash clusters/tests/canary-proof.sh results/ci/canary
+      - name: Save rollout and controller diagnostics
+        if: always()
+        run: |
+          mkdir -p results/ci/canary
+          kubectl --context k3d-self-healing --request-timeout=15s -n demo get rollout,analysisruns -o wide > results/ci/canary/resources.txt 2>&1 || true
+          kubectl --context k3d-self-healing --request-timeout=15s -n demo get events --sort-by=.lastTimestamp > results/ci/canary/events.txt 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canary-abort-evidence
+          path: results/ci/canary/
+      - name: Remove the disposable cluster
+        if: always()
+        run: |
+          if command -v k3d >/dev/null; then
+            k3d cluster delete self-healing
+          fi

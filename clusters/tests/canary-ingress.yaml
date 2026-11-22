@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: resilient-canary-proof
+  namespace: demo
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: canary-proof.localhost
+      http:
+        paths:
+          - path: /work
+            pathType: Exact
+            backend:
+              service:
+                name: resilient-canary-proof
+                port:
+                  number: 8080

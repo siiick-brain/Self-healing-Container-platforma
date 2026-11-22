@@ -26,6 +26,10 @@ on:
         description: Verify Argo CD drift correction and drain a disposable agent under k6 load
         type: boolean
         default: false
+      record_demo:
+        description: Record a GIF of the live RED and SLO dashboards
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -110,8 +114,15 @@ jobs:
       - name: Capture Grafana evidence
         id: grafana
         if: ${{ !cancelled() && steps.full.outcome == 'success' }}
-        timeout-minutes: 8
-        run: bash scripts/capture-grafana.sh "$RUNNER_TEMP/grafana-evidence"
+        timeout-minutes: 10
+        env:
+          RECORD_GRAFANA_DEMO: ${{ github.event_name == 'workflow_dispatch' && inputs.record_demo }}
+        run: |
+          if [[ $RECORD_GRAFANA_DEMO == true ]] && ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -q
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          bash scripts/capture-grafana.sh "$RUNNER_TEMP/grafana-evidence"
       - name: Upload Grafana evidence
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() && steps.grafana.outcome == 'success' }}
@@ -122,6 +133,7 @@ jobs:
             ${{ runner.temp }}/grafana-evidence/grafana-red.png
             ${{ runner.temp }}/grafana-evidence/grafana-slo.png
             ${{ runner.temp }}/grafana-evidence/grafana-prometheus.json
+            ${{ runner.temp }}/grafana-evidence/grafana-demo.gif
       - name: Record the VPA baseline and recommendation
         id: vpa_before
         if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.verify_vpa && steps.full.outcome == 'success' }}

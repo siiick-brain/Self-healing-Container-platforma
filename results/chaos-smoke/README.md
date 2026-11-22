@@ -1,6 +1,6 @@
 # Live fault smoke
 
-The hosted smoke run confirmed PodChaos replacement, StressChaos recovery after an OOM kill and the app-level latency fallback. Each check confirmed cleanup. The archive check matched the MinIO record to the OOM-killed pod UID and verified termination state, previous logs and events.
+The hosted smoke run confirmed PodChaos replacement, StressChaos recovery after an OOM kill and the app-level latency fallback. Each check confirmed cleanup. The archive check matched the MinIO record to the OOM-killed pod UID. The record contains the termination state, events and an empty previous-log field.
 
 | Check | Evidence |
 | --- | --- |
