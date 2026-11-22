@@ -83,8 +83,16 @@ class MeasurementTest(unittest.TestCase):
               patch("measure.mesh_status", side_effect=chain([(applied_at, False)] * 4, repeat((applied_at, True)))),
               patch("measure.get_pods", side_effect=chain([ready, unready, ready, ready, ready, unready], repeat(ready))) as pods):
             results = Path(path)
-            measure(args_for(), results)
-            row = json.loads(next(results.glob("*.json")).read_text())
+            run_id = "a" * 32
+            metadata = results / "observed-window"
+            measure(args_for(), results, run_id=run_id, window_metadata=metadata)
+            row = json.loads((results / f"{run_id}.json").read_text())
+            window = json.loads(metadata.read_text())
+            self.assertEqual(window["run_id"], row["run_id"])
+            self.assertEqual(window["window_end_at"], row["traffic_restored_at"])
+            self.assertTrue(window["recovery_observed"])
+            with self.assertRaisesRegex(FileExistsError, "Trial output already exists"):
+                measure(args_for(), results, run_id=run_id, window_metadata=metadata)
             self.assertGreaterEqual(pods.call_count, 8)
             self.assertEqual(row["dropped_requests_pct"], 0)
             self.assertGreater(row["mttr_s"], row["detection_s"])

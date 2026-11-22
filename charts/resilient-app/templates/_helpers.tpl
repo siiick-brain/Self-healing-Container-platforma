@@ -25,7 +25,11 @@ spec:
   {{- end }}
   containers:
     - name: app
+      {{- if .Values.image.digest }}
+      image: {{ printf "%s@%s" .Values.image.repository .Values.image.digest | quote }}
+      {{- else }}
       image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+      {{- end }}
       imagePullPolicy: {{ .Values.image.pullPolicy }}
       ports:
         - name: http

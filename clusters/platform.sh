@@ -18,6 +18,19 @@ if [[ $agents != 2 && $agents != 3 ]]; then
   exit 1
 fi
 
+matrix_profile=${K3D_CHAOS_PROFILE:-}
+matrix_digest=${K3D_MATRIX_APP_DIGEST:-}
+if [[ -n $matrix_profile ]]; then
+  case "$matrix_profile" in
+    A|A2|B|C) ;;
+    *) echo 'Invalid chaos profile. Expected A, A2, B or C.' >&2; exit 1 ;;
+  esac
+  if [[ ! $matrix_digest =~ ^sha256:[0-9a-f]{64}$ ]]; then
+    echo 'A valid K3D_MATRIX_APP_DIGEST is required for a chaos profile.' >&2
+    exit 1
+  fi
+fi
+
 if ! "${kube[@]}" get --raw=/readyz >/dev/null 2>&1; then
   config=$(mktemp)
   trap 'rm -f "$config"' EXIT
@@ -85,6 +98,24 @@ EOF
               path: /spec/source/helm/parameters
               value:
 $helm_parameters
+EOF
+    )
+  fi
+  if [[ $1 == core && -n $matrix_profile ]]; then
+    source_config+=$'\n'$(cat <<EOF
+        - target:
+            group: argoproj.io
+            kind: Application
+            name: resilient-app
+          patch: |-
+            - op: add
+              path: /spec/source/helm/valueFiles/-
+              value: "../../chaos/profiles/${matrix_profile,,}.yaml"
+            - op: add
+              path: /spec/source/helm/parameters
+              value:
+                - name: image.digest
+                  value: "$matrix_digest"
 EOF
     )
   fi
