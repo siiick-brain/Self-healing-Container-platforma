@@ -1,0 +1,175 @@
+name: Live cluster smoke
+
+on:
+  push:
+    branches: [main, fix/core-readiness]
+    paths:
+      - '.github/workflows/live-smoke.yml'
+      - 'clusters/**'
+      - 'app/**'
+      - 'charts/**'
+      - 'ops/receiver/**'
+      - 'alerts/**'
+      - 'dashboards/**'
+      - 'scripts/capture-grafana.sh'
+  workflow_dispatch:
+    inputs:
+      verify_faults:
+        description: Run the three isolated Chaos Mesh smoke checks
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      K3D_AGENTS: '2'
+      K3D_NODE_EXPORTER: 'false'
+      K3D_CI_GRAFANA_VIEWER: 'true'
+      GITOPS_REVISION: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.19.0
+      - name: Install k3d
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/k3d" https://github.com/k3d-io/k3d/releases/download/v5.8.3/k3d-linux-amd64
+          install -m 0755 "$RUNNER_TEMP/k3d" "$RUNNER_TEMP/k3d-bin"
+          mkdir -p "$RUNNER_TEMP/bin"
+          mv "$RUNNER_TEMP/k3d-bin" "$RUNNER_TEMP/bin/k3d"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Set runner watch capacity
+        run: |
+          current=$(sysctl -n fs.inotify.max_user_instances)
+          if (( current < 1024 )); then
+            sudo sysctl -w fs.inotify.max_user_instances=1024
+          fi
+          sysctl fs.inotify.max_user_instances fs.inotify.max_user_watches
+      - name: Start and verify core
+        id: core
+        run: |
+          set -o pipefail
+          mkdir -p results/ci
+          bash clusters/platform.sh core 2>&1 | tee results/ci/up-core.txt
+          curl -fsS --retry 10 --retry-connrefused --max-time 10 http://127.0.0.1:8080/work |
+            tee results/ci/work.txt
+      - name: Verify network policy
+        run: |
+          set -o pipefail
+          bash clusters/tests/network-policy.sh 2>&1 | tee results/ci/network-policy.txt
+      - name: Prepare disposable full-profile dependencies
+        id: full_dependencies
+        if: ${{ !cancelled() && steps.core.outcome == 'success' }}
+        run: |
+          docker build -t ghcr.io/siiick-brain/diagnostics-receiver:main ops/receiver
+          k3d image import -c self-healing ghcr.io/siiick-brain/diagnostics-receiver:main
+          user=$(openssl rand -hex 12)
+          password=$(openssl rand -hex 24)
+          echo "::add-mask::$user"
+          echo "::add-mask::$password"
+          kubectl --context k3d-self-healing -n storage create secret generic minio-credentials \
+            --from-literal=root-user="$user" --from-literal=root-password="$password"
+          kubectl --context k3d-self-healing -n ops create secret generic diagnostics-minio \
+            --from-literal=access-key="$user" --from-literal=secret-key="$password"
+      - name: Start and verify full
+        id: full
+        if: ${{ !cancelled() && steps.full_dependencies.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          bash clusters/platform.sh full 2>&1 | tee results/ci/up-full.txt
+          kubectl --context k3d-self-healing -n demo get analysistemplate resilient-app-success |
+            tee results/ci/canary-template.txt
+      - name: Verify diagnostics storage
+        if: ${{ !cancelled() && steps.full.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          kubectl --context k3d-self-healing -n ops exec -i deployment/diagnostics-receiver -- python - <<'PY' | tee results/ci/diagnostics-storage.txt
+          import boto3
+          from botocore.config import Config
+
+          s3 = boto3.client(
+              "s3", endpoint_url="http://minio.storage.svc:9000", region_name="us-east-1",
+              config=Config(s3={"addressing_style": "path"}, connect_timeout=5, read_timeout=10),
+          )
+          bucket = "diagnostics"
+          key = "ci/storage-smoke"
+          payload = b"diagnostics storage smoke"
+          s3.create_bucket(Bucket=bucket)
+          s3.put_object(Bucket=bucket, Key=key, Body=payload)
+          try:
+              assert s3.get_object(Bucket=bucket, Key=key)["Body"].read() == payload
+          finally:
+              s3.delete_object(Bucket=bucket, Key=key)
+          print("Receiver credentials can write and read the diagnostics bucket.")
+          PY
+      - name: Capture Grafana evidence
+        id: grafana
+        if: ${{ !cancelled() && steps.full.outcome == 'success' }}
+        timeout-minutes: 8
+        run: bash scripts/capture-grafana.sh "$RUNNER_TEMP/grafana-evidence"
+      - name: Upload Grafana evidence
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && steps.grafana.outcome == 'success' }}
+        with:
+          name: grafana-evidence
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/grafana-evidence/grafana-red.png
+            ${{ runner.temp }}/grafana-evidence/grafana-slo.png
+            ${{ runner.temp }}/grafana-evidence/grafana-prometheus.json
+      - name: Verify local fault experiments
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.verify_faults && steps.full.outcome == 'success' }}
+        timeout-minutes: 6
+        run: |
+          test -f chaos/smoke.py
+          kube=(kubectl --context k3d-self-healing -n demo)
+          selector=app.kubernetes.io/name=resilient-app
+          failed=0
+          for fault in network stress pod; do
+            "${kube[@]}" wait pod -l "$selector" --for=condition=Ready --timeout=90s
+            pod=$("${kube[@]}" get pod -l "$selector" -o jsonpath='{.items[0].metadata.name}')
+            if python3 chaos/smoke.py "$fault" --pod "$pod"; then
+              continue
+            else
+              result=$?
+              if (( result == 2 )); then
+                exit 2
+              fi
+              failed=1
+            fi
+          done
+          exit "$failed"
+      - name: Capture diagnostics
+        if: always()
+        run: |
+          mkdir -p results/ci
+          kubectl --context k3d-self-healing -n argocd get applications -o wide > results/ci/applications.txt 2>&1 || true
+          kubectl --context k3d-self-healing -n argocd get applications -o yaml > results/ci/application-status.yaml 2>&1 || true
+          kubectl --context k3d-self-healing -n argocd logs statefulset/argocd-application-controller --tail=250 > results/ci/application-controller.txt 2>&1 || true
+          kubectl --context k3d-self-healing -n chaos-mesh logs -l app.kubernetes.io/component=controller-manager --prefix --tail=100 > results/ci/chaos-controller.txt 2>&1 || true
+          kubectl --context k3d-self-healing -n chaos-mesh logs -l app.kubernetes.io/component=controller-manager --previous --prefix --tail=100 > results/ci/chaos-controller-previous.txt 2>&1 || true
+          kubectl --context k3d-self-healing get pods -A > results/ci/pods.txt 2>&1 || true
+          kubectl --context k3d-self-healing describe nodes > results/ci/nodes.txt 2>&1 || true
+          {
+            sysctl fs.inotify.max_user_instances fs.inotify.max_user_watches
+            docker exec k3d-self-healing-server-0 cat /proc/1/limits
+          } > results/ci/runner-limits.txt 2>&1 || true
+          kubectl --context k3d-self-healing -n demo get services,endpointslices,networkpolicies -o yaml > results/ci/demo-network.yaml 2>&1 || true
+          kubectl --context k3d-self-healing -n demo get servicemonitor resilient-app -o yaml > results/ci/servicemonitor.yaml 2>&1 || true
+          kubectl --context k3d-self-healing get events -A --sort-by=.lastTimestamp > results/ci/events.txt 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-cluster-evidence
+          path: |
+            results/ci/
+            results/env/docker-stats-*.txt
+            results/chaos-smoke/*.txt
+      - name: Remove the lab cluster
+        if: always()
+        run: k3d cluster delete self-healing
