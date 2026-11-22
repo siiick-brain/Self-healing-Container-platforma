@@ -35,6 +35,13 @@ jobs:
           mkdir -p "$RUNNER_TEMP/bin"
           mv "$RUNNER_TEMP/k3d-bin" "$RUNNER_TEMP/bin/k3d"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Set runner watch capacity
+        run: |
+          current=$(sysctl -n fs.inotify.max_user_instances)
+          if (( current < 1024 )); then
+            sudo sysctl -w fs.inotify.max_user_instances=1024
+          fi
+          sysctl fs.inotify.max_user_instances fs.inotify.max_user_watches
       - name: Start and verify core
         id: core
         run: |
@@ -79,6 +86,10 @@ jobs:
           kubectl --context k3d-self-healing -n chaos-mesh logs -l app.kubernetes.io/component=controller-manager --previous --prefix --tail=100 > results/ci/chaos-controller-previous.txt 2>&1 || true
           kubectl --context k3d-self-healing get pods -A > results/ci/pods.txt 2>&1 || true
           kubectl --context k3d-self-healing describe nodes > results/ci/nodes.txt 2>&1 || true
+          {
+            sysctl fs.inotify.max_user_instances fs.inotify.max_user_watches
+            docker exec k3d-self-healing-server-0 cat /proc/1/limits
+          } > results/ci/runner-limits.txt 2>&1 || true
           kubectl --context k3d-self-healing -n demo get services,endpointslices,networkpolicies -o yaml > results/ci/demo-network.yaml 2>&1 || true
           kubectl --context k3d-self-healing -n demo get servicemonitor resilient-app -o yaml > results/ci/servicemonitor.yaml 2>&1 || true
           kubectl --context k3d-self-healing get events -A --sort-by=.lastTimestamp > results/ci/events.txt 2>&1 || true
