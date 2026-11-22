@@ -13,6 +13,11 @@ on:
       - 'dashboards/**'
       - 'scripts/capture-grafana.sh'
   workflow_dispatch:
+    inputs:
+      verify_faults:
+        description: Run the three isolated Chaos Mesh smoke checks
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -117,6 +122,28 @@ jobs:
             ${{ runner.temp }}/grafana-evidence/grafana-red.png
             ${{ runner.temp }}/grafana-evidence/grafana-slo.png
             ${{ runner.temp }}/grafana-evidence/grafana-prometheus.json
+      - name: Verify local fault experiments
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.verify_faults && steps.full.outcome == 'success' }}
+        timeout-minutes: 6
+        run: |
+          test -f chaos/smoke.py
+          kube=(kubectl --context k3d-self-healing -n demo)
+          selector=app.kubernetes.io/name=resilient-app
+          failed=0
+          for fault in network stress pod; do
+            "${kube[@]}" wait pod -l "$selector" --for=condition=Ready --timeout=90s
+            pod=$("${kube[@]}" get pod -l "$selector" -o jsonpath='{.items[0].metadata.name}')
+            if python3 chaos/smoke.py "$fault" --pod "$pod"; then
+              continue
+            else
+              result=$?
+              if (( result == 2 )); then
+                exit 2
+              fi
+              failed=1
+            fi
+          done
+          exit "$failed"
       - name: Capture diagnostics
         if: always()
         run: |
@@ -142,6 +169,7 @@ jobs:
           path: |
             results/ci/
             results/env/docker-stats-*.txt
+            results/chaos-smoke/*.txt
       - name: Remove the lab cluster
         if: always()
         run: k3d cluster delete self-healing
