@@ -2,10 +2,11 @@ import argparse
 import subprocess
 import time
 import uuid
+import urllib.request
 from pathlib import Path
 
 from measure import CONTEXT, KUBECTL, MESH_KINDS, SCENARIOS
-from measure import app_container, controller_uid, get_pods, get_work, mesh_manifest, mesh_status, pod_ready, timestamp
+from measure import app_container, app_control, controller_uid, get_pods, get_work, mesh_manifest, mesh_status, pod_ready, timestamp
 
 WORK_URL = "http://127.0.0.1:8080"
 OBSERVATION_SECONDS = 60
@@ -72,9 +73,43 @@ def observe(args, resource, baseline, original_uids, log):
     raise RuntimeError("Observation expired before confirming injection and workload recovery")
 
 
-def smoke(args, log):
+def verify_app_latency(args, log):
+    if not get_work(args.control_url):
+        log("FAIL: selected pod is unavailable through its loopback port-forward")
+        return 1
+    passed = cleaned = False
+    try:
+        app_control(args, "latency")
+        start = time.monotonic()
+        with urllib.request.urlopen(f"{args.control_url}/work", timeout=5) as response:
+            if response.status != 200:
+                raise RuntimeError("The delayed work request did not return HTTP 200")
+        elapsed = time.monotonic() - start
+        log(f"App-level latency observed on the selected pod: {elapsed:.3f} seconds")
+        passed = elapsed >= 1
+    except (*COMMAND_ERRORS, RuntimeError) as error:
+        log(f"FAIL: {cli_error(error)}")
+    finally:
+        try:
+            app_control(args, "reset")
+            cleaned = get_work(args.control_url)
+        except COMMAND_ERRORS as error:
+            log(f"Cleanup unverified: {cli_error(error)}")
+    if not cleaned:
+        log("FAIL: app-level latency reset could not be confirmed")
+        return 2
+    log("Cleanup confirmed")
+    if not passed or not get_work(WORK_URL):
+        log("FAIL: app-level latency or ingress recovery was not verified")
+        return 1
+    log("PASS: App-level latency smoke verified")
+    return 0
+
+
+def smoke(args, log, *, app_latency=False):
     resource = (MESH_KINDS[args.scenario], f"resilient-app-smoke-{uuid.uuid4().hex}")
-    log(f"Context={CONTEXT} namespace=demo target={args.pod} resource={'/'.join(resource)}")
+    method = "app-level" if app_latency else "/".join(resource)
+    log(f"Context={CONTEXT} namespace=demo target={args.pod} method={method}")
     try:
         pods = get_pods()
         baseline = next((pod for pod in pods if pod["metadata"]["name"] == args.pod), None)
@@ -88,6 +123,8 @@ def smoke(args, log):
         if not get_work(WORK_URL):
             raise RuntimeError(f"Baseline ingress unavailable at {WORK_URL}/work")
         log(f"Baseline ready, node={node} target_uid={baseline['metadata']['uid']} ingress healthy")
+        if app_latency:
+            return verify_app_latency(args, log)
         manifest = mesh_manifest(args, resource[1])
     except (*COMMAND_ERRORS, RuntimeError) as error:
         log(f"FAIL before submitting the experiment: {cli_error(error)}")
@@ -133,9 +170,14 @@ def main():
     parser = argparse.ArgumentParser(description="Run one real Chaos Mesh smoke check in the local k3d demo")
     parser.add_argument("fault", choices=SCENARIOS.values())
     parser.add_argument("--pod", required=True, help="Ready resilient-app pod in the local demo namespace")
+    parser.add_argument("--app-latency", action="store_true", help="Use the local app-level network fallback")
+    parser.add_argument("--evidence-dir", type=Path, default=Path(__file__).resolve().parents[1] / "results" / "chaos-smoke")
     args = parser.parse_args()
+    if args.app_latency and args.fault != "network":
+        parser.error("--app-latency is available only for the network smoke")
     args.scenario = next(scenario for scenario, fault in SCENARIOS.items() if fault == args.fault)
-    path = Path(__file__).resolve().parents[1] / "results" / "chaos-smoke" / f"{args.fault}.txt"
+    args.control_url = "http://127.0.0.1:18080"
+    path = args.evidence_dir / f"{args.fault}.txt"
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as stream:
         def log(message):
@@ -143,7 +185,7 @@ def main():
             print(line, file=stream, flush=True)
             print(line, flush=True)
 
-        return smoke(args, log)
+        return smoke(args, log, app_latency=args.app_latency)
 
 
 if __name__ == "__main__":

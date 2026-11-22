@@ -1,0 +1,7 @@
+{
+  "object": "oom/d3f4ca3d-230f-4fe8-bef6-cf9a56b3349f/app/a62f51d6899d36f05a7efefdf2de4aefdba55cf5fd7994d3fc01ff8f031017df.json.gz",
+  "pod_uid": "d3f4ca3d-230f-4fe8-bef6-cf9a56b3349f",
+  "termination_reason": "OOMKilled",
+  "previous_log_bytes": 0,
+  "events_recorded": 8
+}

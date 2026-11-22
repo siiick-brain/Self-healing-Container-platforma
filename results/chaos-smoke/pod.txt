@@ -1,0 +1,9 @@
+2026-11-22T19:14:50.549174+00:00 Context=k3d-self-healing namespace=demo target=resilient-app-ff44d4655-6qrfz method=podchaos/resilient-app-smoke-2ea1b8a12e7f4dad952eafcfae1d3301
+2026-11-22T19:14:50.618849+00:00 Baseline ready, node=k3d-self-healing-server-0 target_uid=48c9604f-30e1-4c5e-8d79-16558847495b ingress healthy
+2026-11-22T19:14:50.797017+00:00 podchaos.chaos-mesh.org/resilient-app-smoke-2ea1b8a12e7f4dad952eafcfae1d3301 created
+2026-11-22T19:14:51.622986+00:00 Controller Apply succeeded at 2026-11-22T19:14:50+00:00
+2026-11-22T19:14:53.523192+00:00 Target pod removed and same-controller replacement ready, pod=resilient-app-ff44d4655-hmvk8 uid=e899d332-c81a-414d-a940-11a1c54fd577
+2026-11-22T19:14:53.523238+00:00 Three consecutive healthy ingress probes with the workload ready
+2026-11-22T19:14:53.523251+00:00 Samples after controller confirmation, ingress healthy=4 ingress failed=0; original target unready or absent=True
+2026-11-22T19:14:53.676797+00:00 Cleanup confirmed
+2026-11-22T19:14:53.676863+00:00 PASS: Chaos Mesh smoke verified

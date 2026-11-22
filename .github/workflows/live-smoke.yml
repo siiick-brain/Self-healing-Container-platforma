@@ -129,21 +129,87 @@ jobs:
           test -f chaos/smoke.py
           kube=(kubectl --context k3d-self-healing -n demo)
           selector=app.kubernetes.io/name=resilient-app
+          evidence=results/ci/fault-smoke
+          mkdir -p "$evidence"
           failed=0
-          for fault in network stress pod; do
+          forward_pid=
+          stop_forward() {
+            if [[ -n $forward_pid ]]; then
+              kill "$forward_pid" 2>/dev/null || true
+              wait "$forward_pid" 2>/dev/null || true
+              forward_pid=
+            fi
+          }
+          trap stop_forward EXIT
+          for fault in network pod stress; do
             "${kube[@]}" wait pod -l "$selector" --for=condition=Ready --timeout=90s
             pod=$("${kube[@]}" get pod -l "$selector" -o jsonpath='{.items[0].metadata.name}')
-            if python3 chaos/smoke.py "$fault" --pod "$pod"; then
-              continue
-            else
-              result=$?
-              if (( result == 2 )); then
-                exit 2
-              fi
+            options=()
+            if [[ $fault == network ]]; then
+              "${kube[@]}" port-forward --address 127.0.0.1 "pod/$pod" 18080:8080 > "$evidence/port-forward.txt" 2>&1 &
+              forward_pid=$!
+              curl --noproxy '*' -fsS --retry 10 --retry-connrefused --retry-delay 1 --max-time 3 http://127.0.0.1:18080/work
+              options+=(--app-latency)
+            fi
+            result=0
+            python3 chaos/smoke.py "$fault" --pod "$pod" --evidence-dir "$evidence" "${options[@]}" || result=$?
+            stop_forward
+            if (( result == 2 )); then
+              exit 2
+            elif (( result != 0 )); then
               failed=1
+            elif [[ $fault == pod ]]; then
+              sleep 35
             fi
           done
           exit "$failed"
+      - name: Verify the OOM diagnostics archive
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.verify_faults && steps.full.outcome == 'success' }}
+        timeout-minutes: 3
+        run: |
+          set -o pipefail
+          if ! grep -q 'PASS: Chaos Mesh smoke verified' results/ci/fault-smoke/stress.txt; then
+            echo 'Archive check skipped because the stress smoke did not pass.' | tee results/ci/oom-archive.txt
+            exit 0
+          fi
+          uid=$(sed -n 's/.* target_uid=\([^ ]*\) .*/\1/p' results/ci/fault-smoke/stress.txt | tail -n 1)
+          test -n "$uid"
+          kubectl --context k3d-self-healing -n ops exec -i deployment/diagnostics-receiver -- python - "$uid" <<'PY' | tee results/ci/oom-archive.txt
+          import gzip
+          import json
+          import sys
+          import time
+
+          import boto3
+          from botocore.config import Config
+
+          uid = sys.argv[1]
+          s3 = boto3.client(
+              "s3", endpoint_url="http://minio.storage.svc:9000", region_name="us-east-1",
+              config=Config(s3={"addressing_style": "path"}, connect_timeout=5, read_timeout=10),
+          )
+          bucket = "diagnostics"
+          deadline = time.monotonic() + 100
+          while time.monotonic() < deadline:
+              objects = s3.list_objects_v2(Bucket=bucket, Prefix=f"oom/{uid}/").get("Contents", [])
+              if objects:
+                  key = objects[0]["Key"]
+                  body = s3.get_object(Bucket=bucket, Key=key)["Body"].read()
+                  record = json.loads(gzip.decompress(body))
+                  assert record["pod_uid"] == uid and record["termination"]["reason"] == "OOMKilled"
+                  assert isinstance(record["previous_logs"], str) and isinstance(record["events"], list)
+                  print(json.dumps({
+                      "object": key,
+                      "pod_uid": uid,
+                      "termination_reason": "OOMKilled",
+                      "previous_log_bytes": len(record["previous_logs"].encode()),
+                      "events_recorded": len(record["events"]),
+                  }))
+                  break
+              time.sleep(4)
+          else:
+              raise SystemExit("No receiver archive matched the OOM-killed pod.")
+          PY
       - name: Capture diagnostics
         if: always()
         run: |
@@ -154,6 +220,7 @@ jobs:
           kubectl --context k3d-self-healing -n chaos-mesh logs -l app.kubernetes.io/component=controller-manager --prefix --tail=100 > results/ci/chaos-controller.txt 2>&1 || true
           kubectl --context k3d-self-healing -n chaos-mesh logs -l app.kubernetes.io/component=controller-manager --previous --prefix --tail=100 > results/ci/chaos-controller-previous.txt 2>&1 || true
           kubectl --context k3d-self-healing get pods -A > results/ci/pods.txt 2>&1 || true
+          kubectl --context k3d-self-healing -n ops logs deployment/diagnostics-receiver --tail=100 > results/ci/diagnostics-receiver.txt 2>&1 || true
           kubectl --context k3d-self-healing describe nodes > results/ci/nodes.txt 2>&1 || true
           {
             sysctl fs.inotify.max_user_instances fs.inotify.max_user_watches
@@ -169,7 +236,6 @@ jobs:
           path: |
             results/ci/
             results/env/docker-stats-*.txt
-            results/chaos-smoke/*.txt
       - name: Remove the lab cluster
         if: always()
         run: k3d cluster delete self-healing

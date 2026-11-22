@@ -1,0 +1,10 @@
+2026-11-22T19:15:29.167474+00:00 Context=k3d-self-healing namespace=demo target=resilient-app-ff44d4655-bk5k9 method=stresschaos/resilient-app-smoke-4bf363a9696644aa91cb0a76d21c70f0
+2026-11-22T19:15:29.227647+00:00 Baseline ready, node=k3d-self-healing-agent-1 target_uid=d3f4ca3d-230f-4fe8-bef6-cf9a56b3349f ingress healthy
+2026-11-22T19:15:29.415187+00:00 stresschaos.chaos-mesh.org/resilient-app-smoke-4bf363a9696644aa91cb0a76d21c70f0 created
+2026-11-22T19:15:30.095314+00:00 Controller Apply succeeded at 2026-11-22T19:15:29+00:00
+2026-11-22T19:15:32.083030+00:00 Target app container reported OOMKilled, restart count 0 -> 1
+2026-11-22T19:15:44.188707+00:00 Controller reports fault recovered
+2026-11-22T19:15:45.489465+00:00 Three consecutive healthy ingress probes with the workload ready
+2026-11-22T19:15:45.489522+00:00 Samples after controller confirmation, ingress healthy=26 ingress failed=0; original target unready or absent=True
+2026-11-22T19:15:45.648089+00:00 Cleanup confirmed
+2026-11-22T19:15:45.648145+00:00 PASS: Chaos Mesh smoke verified
