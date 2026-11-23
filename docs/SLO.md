@@ -9,10 +9,10 @@ The availability SLI is the ratio of successful work requests to all work reques
 
 The availability objective permits a 0.5 percent error fraction. Compute burn as the observed bad fraction divided by the error budget fraction. Review rapid sustained burn immediately. Track slow burn as follow-up work. Suspend risky rollouts while the budget is exhausted.
 
-| Action | Evaluation |
-| --- | --- |
-| Page | Pair a long-window burn alert with a short confirmation window |
-| Investigate | Use a slower pair to detect lower but persistent burn |
-| Review the budget | Inspect the full rolling availability window |
+| Action | Windows | Trigger |
+| --- | --- | --- |
+| Page | 1 hour and 5 minutes | Both above 14.4 times the error-budget burn rate |
+| Page | 6 hours and 30 minutes | Both above 6 times the error-budget burn rate |
+| Review the budget | 30 days of observed requests | Availability below 99.5% for 5 minutes |
 
-See the [Google SRE Workbook chapter on alerting on SLOs](https://sre.google/workbook/alerting-on-slos/).
+The [Prometheus rules](../alerts/app.rules.yaml) implement these thresholds. [Google SRE Workbook chapter on alerting on SLOs](https://sre.google/workbook/alerting-on-slos/)

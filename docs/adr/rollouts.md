@@ -40,3 +40,7 @@ Download `gitops-rollback-evidence` from the completed run. If a readiness check
 The first hosted rollback returned HTTP 503 with zero ready replicas 182 seconds after the runner observed the bad push. The revert was pushed, but the runner did not verify recovery before its five-minute deadline. [Recorded outage and baseline](../../results/operations/rollback-first-attempt.json) · [Original artifact](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45087156670/artifacts/14780350840)
 
 The retest observed HTTP 200 and three ready replicas 20 seconds after observing the bad push and 7 seconds after observing the revert push. The runner requested a refresh after each validated commit, and Argo CD reconciled both changes. [Rollback results](../../results/operations/rollback-retest.json) · [Hosted run](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45089322309)
+
+## Canary abort proof
+
+Prometheus measured a 0% success ratio on the bad revision, and Argo Rollouts aborted it in 120.667 seconds. The bad revision served 386 of 1,207 requests before the abort. K6 recorded 2,744 successful requests after stable readiness returned. The controller changed rollout state without writing to Git. [Canary results](../../results/operations/canary-abort.json) · [Hosted run](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45091036872)

@@ -1,0 +1,16 @@
+{
+  "analysis_run": "resilient-canary-proof-5fcd857c77-2",
+  "measured_canary_success_ratio": 0,
+  "requested_at": "2026-11-23T00:56:15.333479353Z",
+  "aborted_at": "2026-11-23T00:58:16Z",
+  "stable_ready_at": "2026-11-23T00:58:23.880171776Z",
+  "stable_hash": "fb4fdfdc9",
+  "bad_hash": "5fcd857c77",
+  "time_to_abort_s": 120.667,
+  "requests_before_abort": 1207,
+  "bad_version_requests_before_abort": 386,
+  "bad_version_request_share_pct": 31.98,
+  "other_outcomes_before_abort": 0,
+  "healthy_requests_at_baseline": 120,
+  "healthy_requests_after_recovery": 2744
+}

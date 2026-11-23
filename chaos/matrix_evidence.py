@@ -16,12 +16,19 @@ EXPECTED_METHODS = {"crash": "chaos-mesh", "latency": "app-level", "leak": "chao
 SCENARIOS = tuple(EXPECTED_METHODS)
 QUOTAS = {"A": 10, "A2": 10, "B": 20, "C": 20}
 METHODS = set(EXPECTED_METHODS.values())
+OUTCOMES = {"recovered", "no_detected_impact", "recovery_unobserved"}
 
 
 def read_object(path):
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
         raise ValueError("expected a JSON object")
+    return value
+
+
+def trial_id(value):
+    if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{32}", value):
+        raise ValueError("run_id must be the runner's 32-digit lowercase UUID")
     return value
 
 
@@ -144,6 +151,30 @@ def evidence(row, directory):
     }
 
 
+def group_report(scenario, config, trials, recorded, methods):
+    times = sorted(trial["mttr_s"] for trial in trials if trial["mttr_s"] is not None)
+    requests = sum(trial["k6_http_requests"] for trial in trials)
+    failures = sum(trial["k6_http_failures"] for trial in trials)
+    return {
+        "scenario": scenario,
+        "config": config,
+        "expected_runs": QUOTAS[config],
+        "recorded_runs": recorded,
+        "validated_runs": len(trials),
+        "injection_methods": sorted(methods),
+        "recovered_runs": len(times),
+        "no_detected_impact_runs": sum(trial["outcome"] == "no_detected_impact" for trial in trials),
+        "recovery_unobserved_runs": sum(trial["outcome"] == "recovery_unobserved" for trial in trials),
+        "median_mttr_s": statistics.median(times) if times else None,
+        "p95_mttr_s": times[math.ceil(0.95 * len(times)) - 1] if times else None,
+        "k6_http_requests": requests,
+        "k6_http_failures": failures,
+        "k6_http_failed_pct": 100 * failures / requests if requests else None,
+        "k6_dropped_iterations": sum(trial["k6_dropped_iterations"] for trial in trials) if trials else None,
+        "trials": trials,
+    }
+
+
 def matrix_report(results, load_root):
     cells = {(scenario, config): [] for scenario in SCENARIOS for config in QUOTAS}
     recorded = dict.fromkeys(cells, 0)
@@ -153,9 +184,7 @@ def matrix_report(results, load_root):
     for path in sorted(results.glob("*.json")):
         try:
             row = read_object(path)
-            run_id = row["run_id"]
-            if not isinstance(run_id, str) or not re.fullmatch(r"[0-9a-f]{32}", run_id):
-                raise ValueError("run_id must be the runner's 32-digit lowercase UUID")
+            run_id = trial_id(row["run_id"])
             if run_id in seen:
                 raise ValueError(f"duplicate run_id {run_id}")
             if path.stem != run_id:
@@ -189,27 +218,7 @@ def matrix_report(results, load_root):
         for trial in trials:
             scenario_loads[scenario].add(tuple(trial["load"].values()))
 
-        times = sorted(trial["mttr_s"] for trial in trials if trial["mttr_s"] is not None)
-        requests = sum(trial["k6_http_requests"] for trial in trials)
-        failures = sum(trial["k6_http_failures"] for trial in trials)
-        groups.append({
-            "scenario": scenario,
-            "config": config,
-            "expected_runs": required,
-            "recorded_runs": recorded[cell],
-            "validated_runs": len(trials),
-            "injection_methods": sorted(methods[cell]),
-            "recovered_runs": len(times),
-            "no_detected_impact_runs": sum(trial["outcome"] == "no_detected_impact" for trial in trials),
-            "recovery_unobserved_runs": sum(trial["outcome"] == "recovery_unobserved" for trial in trials),
-            "median_mttr_s": statistics.median(times) if times else None,
-            "p95_mttr_s": times[math.ceil(0.95 * len(times)) - 1] if times else None,
-            "k6_http_requests": requests,
-            "k6_http_failures": failures,
-            "k6_http_failed_pct": 100 * failures / requests if requests else None,
-            "k6_dropped_iterations": sum(trial["k6_dropped_iterations"] for trial in trials) if trials else None,
-            "trials": trials,
-        })
+        groups.append(group_report(scenario, config, trials, recorded[cell], methods[cell]))
 
     for scenario, settings in scenario_loads.items():
         if len(settings) > 1:
@@ -218,11 +227,85 @@ def matrix_report(results, load_root):
     return {"complete": not errors, "errors": errors, "cells": groups}
 
 
+def archived_report(path):
+    archive = read_object(path)
+    if archive.get("complete") is not True or archive.get("errors") != []:
+        raise ValueError("expected a complete, error-free hosted matrix")
+
+    cells = {(scenario, config): None for scenario in SCENARIOS for config in QUOTAS}
+    seen = set()
+    load = None
+    for entry in archive["cells"]:
+        scenario, config = entry["scenario"], entry["config"]
+        cell = (scenario, config)
+        if cell not in cells or cells[cell] is not None:
+            raise ValueError(f"unexpected or duplicate matrix cell {scenario}/{config}")
+        trials = entry["trials"]
+        if len(trials) != QUOTAS[config]:
+            raise ValueError(f"incorrect trial count for {scenario}/{config}")
+        method = EXPECTED_METHODS[scenario]
+        for trial in trials:
+            run_id = trial_id(trial["run_id"])
+            if run_id in seen:
+                raise ValueError(f"duplicate run_id {run_id}")
+            seen.add(run_id)
+            if trial["injection_type"] != method or trial["outcome"] not in OUTCOMES:
+                raise ValueError(f"invalid method or outcome for {run_id}")
+            mttr = trial["mttr_s"]
+            if trial["outcome"] == "recovered":
+                if type(mttr) not in (int, float) or not math.isfinite(mttr) or mttr < 0:
+                    raise ValueError(f"invalid recovery time for {run_id}")
+            elif mttr is not None:
+                raise ValueError(f"unexpected recovery time for {run_id}")
+            requests, failures, drops = (trial[key] for key in (
+                "k6_http_requests", "k6_http_failures", "k6_dropped_iterations"
+            ))
+            if any(type(count) is not int or count < 0 for count in (requests, failures, drops)):
+                raise ValueError(f"invalid k6 counts for {run_id}")
+            if failures > requests or requests + drops == 0:
+                raise ValueError(f"inconsistent k6 counts for {run_id}")
+            trial_load = trial["load"]
+            if (any(type(trial_load[key]) is not int or trial_load[key] <= 0 for key in ("rate", "duration_s"))
+                    or not isinstance(trial_load["work_url"], str) or not trial_load["work_url"]):
+                raise ValueError(f"invalid load settings for {run_id}")
+            if load is None:
+                load = trial_load
+            if trial_load != load:
+                raise ValueError(f"different load settings for {run_id}")
+        group = group_report(scenario, config, trials, len(trials), {method})
+        if group != entry:
+            raise ValueError(f"archived totals do not match the observations for {scenario}/{config}")
+        cells[cell] = group
+
+    if None in cells.values():
+        raise ValueError("expected all 12 matrix cells")
+    return cells.values()
+
+
+def print_table(groups):
+    def number(value):
+        return f"{value:.2f}" if value is not None else "N/A"
+
+    print("| Scenario | Profile | Trials | Recovered | Median MTTR (s) | p95 MTTR (s) | k6 failed (%) | Dropped iterations |")
+    print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |")
+    for group in groups:
+        print(f"| {group['scenario']} | {group['config']} | {group['validated_runs']} | {group['recovered_runs']} | "
+              f"{number(group['median_mttr_s'])} | {number(group['p95_mttr_s'])} | "
+              f"{number(group['k6_http_failed_pct'])} | {group['k6_dropped_iterations']} |")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--results", type=Path, default=Path("results/chaos"))
     parser.add_argument("--load", type=Path, default=Path("results/load"))
+    parser.add_argument("--archive", type=Path, help="recalculate the Markdown table from a complete hosted summary")
     args = parser.parse_args()
+    if args.archive is not None:
+        try:
+            print_table(archived_report(args.archive))
+        except (OSError, AttributeError, KeyError, OverflowError, TypeError, ValueError) as error:
+            parser.exit(1, f"{args.archive}: {error}\n")
+        return 0
     report = matrix_report(args.results, args.load)
     print(json.dumps(report, indent=2, allow_nan=False))
     return 0 if report["complete"] else 1

@@ -1,6 +1,6 @@
 # Self-healing container platform
 
-A bad deploy can send requests to an unhealthy replica and consume the service's error budget. This k3d lab compares [basic and tuned probes](docs/CHAOS.md) and [canary aborts](docs/adr/rollouts.md) to find out how long recovery takes and how much traffic is affected.
+A bad deploy can send requests to an unhealthy replica and consume the service's error budget. In this k3d lab, tuned probes cut the slow-response request failure rate from 30.80% in profile A to 11.57% in profile B. In a separate bad-release test, Argo Rollouts aborted the canary after about 121 seconds. [Matrix results](results/chaos-matrix/matrix-summary.json) · [Canary results](results/operations/canary-abort.json)
 
 ## Results
 
@@ -11,9 +11,9 @@ A bad deploy can send requests to an unhealthy replica and consume the service's
 | Memory exhaustion | StressChaos triggered an OOM kill and the target container restarted. [StressChaos log](results/chaos-smoke/stress.txt) |
 | Diagnostics | MinIO held an archive for the terminated pod UID. [Archive record](results/chaos-smoke/oom-archive.json) |
 | GitOps rollback | HTTP 200 and three ready replicas returned 7 seconds after the observed revert push. [Rollback results](results/operations/rollback-retest.json) |
-| Canary abort | Verification pending. [Delivery design](docs/adr/rollouts.md) |
+| Canary abort | The controller aborted in 120.667 seconds. The bad revision served 31.98% of requests before the abort. [Canary results](results/operations/canary-abort.json) |
 
-The [live smoke run](results/chaos-smoke/) verified fault injection and cleanup. The [recovery matrix](chaos/README.md#hosted-matrix) measures recovery time and request loss across the probe and rollout profiles.
+The [release verification record](results/README.md) links the recovery matrix, delivery proofs, and operational checks. [Fault smoke evidence](results/chaos-smoke/)
 
 ## Architecture
 
@@ -48,13 +48,13 @@ The [core profile](clusters/gitops/core/) provides GitOps, ingress, workload pol
 | Slow response | The target pod response took 1.504 seconds with the fault active. [Latency log](results/chaos-smoke/network.txt) |
 | Memory exhaustion | All 26 ingress smoke probes after controller confirmation were healthy. [StressChaos log](results/chaos-smoke/stress.txt) |
 
-The [third hosted matrix run](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45064244265) validated 120 of 180 trials across profiles A, A2 and B. Profile C still needs 60 trials. Each cell below shows median observed recovery time and the k6 request failure rate during the observation windows. [Validated partial results](results/chaos-matrix/45064244265-partial-summary.json)
+The hosted matrix validated all 180 trials. Each cell shows median and p95 recovery time in seconds, then the k6 request failure rate during the observation windows. Run `make report` to regenerate the table from the checked-in observations. [Complete matrix](results/chaos-matrix/matrix-summary.json) · [Run provenance](results/chaos-matrix/matrix-provenance.json)
 
-| Scenario | A (10 trials) | A2 (10 trials) | B (20 trials) |
-| --- | --- | --- | --- |
-| Crash | 3.10 s / 12.31% | 2.72 s / 9.65% | 3.12 s / 13.99% |
-| Slow response | 16.04 s / 30.80% | 16.04 s / 30.85% | 16.85 s / 11.57% |
-| Memory exhaustion | 15.84 s / 0% | 15.81 s / 0% | 15.88 s / 0% |
+| Scenario | A (10 trials) | A2 (10 trials) | B (20 trials) | C (20 trials) |
+| --- | --- | --- | --- | --- |
+| Crash | 3.10 / 5.75 / 12.31% | 2.72 / 12.29 / 9.65% | 3.12 / 5.64 / 13.99% | 3.33 / 5.75 / 12.07% |
+| Slow response | 16.04 / 16.78 / 30.80% | 16.04 / 16.80 / 30.85% | 16.85 / 17.33 / 11.57% | 16.60 / 17.11 / 13.44% |
+| Memory exhaustion | 15.84 / 16.13 / 0% | 15.81 / 16.11 / 0% | 15.88 / 16.04 / 0% | 15.90 / 16.25 / 0% |
 
 Hosted latency trials use the app-level control after NetworkChaos failed to configure iptables. [NetworkChaos postmortem](docs/postmortems/2026-11-22-hosted-network-chaos.md) · [Matrix postmortem](docs/postmortems/2026-11-22-hosted-recovery-matrix.md) · [Partial matrix summary](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45064244265/artifacts/14775560729)
 

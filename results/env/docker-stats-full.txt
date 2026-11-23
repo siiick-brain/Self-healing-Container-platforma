@@ -1,0 +1,5 @@
+CONTAINER ID   NAME                        CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS
+c9e35d296b8a   k3d-self-healing-serverlb   0.00%     7.301MiB / 15.61GiB   0.05%     28.4MB / 28.3MB   0B / 12.3kB       16
+b9e6cbd224c2   k3d-self-healing-agent-1    14.33%    1.872GiB / 15.61GiB   11.99%    1.37GB / 96.6MB   15.7MB / 4.61GB   495
+b4001e328515   k3d-self-healing-agent-0    1.35%     648.3MiB / 15.61GiB   4.06%     1.03GB / 22.4MB   4.58MB / 4.37GB   190
+207a0480807b   k3d-self-healing-server-0   52.90%    2.295GiB / 15.61GiB   14.70%    991MB / 401MB     34.4MB / 4.31GB   383

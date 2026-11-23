@@ -8,6 +8,10 @@ The workflow uploads a separate artifact for each profile and validates the comb
 
 The `resume_profile_c` input reruns only C at the original GitOps revision and image digest. It adds the 120 validated A, A2, and B trials from run `45064244265` and checks the revision and image for each shard before validating the full matrix again. The `matrix-provenance.json` file identifies which run supplied each profile. Use the default input to collect a fresh four-profile matrix. [Original run](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45064244265)
 
+Run `make report` from a fresh clone with Python 3 to regenerate the 12-cell table offline from the [archived trial observations](../results/chaos-matrix/matrix-summary.json). The command checks the trial counts and recomputes median and p95 recovery times and the request failure rate. It uses the recorded outcomes and does not start Kubernetes or replay k6 traffic. Use the hosted workflow to rerun the experiments.
+
+When `results/chaos/` contains local trials, `make report` summarizes those trials. Set `CHAOS_RESULTS` to select another local directory, or run `python3 chaos/matrix_evidence.py --archive results/chaos-matrix/matrix-summary.json` to print the published table explicitly.
+
 ## Local smoke and trials
 
 Start the full k3d profile. Select a ready app pod from the output of the first command and set `POD` to its name. Run each smoke command separately and wait for it to finish.
