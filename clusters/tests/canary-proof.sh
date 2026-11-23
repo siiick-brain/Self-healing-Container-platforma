@@ -10,6 +10,7 @@ output=${1:?Pass an evidence directory.}
 mkdir -p "$output"
 kube=(kubectl --context k3d-self-healing --request-timeout=15s)
 demo=("${kube[@]}" -n demo)
+monitoring=("${kube[@]}" -n monitoring)
 release=resilient-canary-proof
 stable_image="$release:stable"
 bad_image="$release:bad"
@@ -28,7 +29,7 @@ until "${kube[@]}" -n argocd get application argo-rollouts -o json |
   sleep 3
 done
 "${kube[@]}" wait crd/analysistemplates.argoproj.io crd/rollouts.argoproj.io --for=condition=Established --timeout=45s
-"${kube[@]}" apply -f alerts/k8s/canary.yaml
+"${kube[@]}" apply -f alerts/k8s/canary.yaml -f clusters/tests/canary-podmonitor.yaml
 
 docker build -t "$stable_image" app
 docker build -t "$bad_image" --build-arg LAB_CANARY=bad app
@@ -41,7 +42,7 @@ helm template "$release" charts/resilient-app -n demo \
   --set serviceMonitor.enabled=false \
   --set 'rollouts.canary.steps[0].setWeight=33' \
   --set-string 'rollouts.canary.steps[1].pause.duration=8m' | "${demo[@]}" apply -f -
-"${kube[@]}" apply -f clusters/tests/canary-ingress.yaml -f clusters/tests/canary-podmonitor.yaml
+"${kube[@]}" apply -f clusters/tests/canary-ingress.yaml
 "${demo[@]}" wait rollout "$release" --for='jsonpath={.status.phase}=Healthy' --timeout=120s
 "${rollout[@]}" > "$output/baseline-rollout.json"
 stable_hash=$(jq -er '.status.stableRS | select(length > 0)' "$output/baseline-rollout.json")
@@ -50,19 +51,87 @@ curl --fail --silent --show-error --retry 10 --retry-all-errors --max-time 5 \
   -H 'Host: canary-proof.localhost' http://127.0.0.1:8080/work | grep -Fx ok
 
 load_pid=
-kubectl --context k3d-self-healing -n monitoring port-forward --address 127.0.0.1 \
-  svc/kube-prometheus-stack-prometheus 19090:9090 > "$output/prometheus-forward.txt" 2>&1 &
-forward_pid=$!
+forward_pid=
+start_forward() {
+  kubectl --context k3d-self-healing -n monitoring port-forward --address 127.0.0.1 \
+    svc/kube-prometheus-stack-prometheus 19090:9090 >> "$output/prometheus-forward.txt" 2>&1 &
+  forward_pid=$!
+}
+stop_forward() {
+  if [[ -n $forward_pid ]]; then
+    kill "$forward_pid" 2>/dev/null || true
+    wait "$forward_pid" 2>/dev/null || true
+    forward_pid=
+  fi
+}
 cleanup() {
   if [[ -n $load_pid ]]; then
     kill "$load_pid" 2>/dev/null || true
     wait "$load_pid" 2>/dev/null || true
   fi
-  kill "$forward_pid" 2>/dev/null || true
-  wait "$forward_pid" 2>/dev/null || true
+  stop_forward
 }
 trap cleanup EXIT
 prometheus=http://127.0.0.1:19090
+prometheus_statefulset='prometheus-kube-prometheus-stack-prometheus'
+scrape_job="podMonitor/demo/$release/0"
+job_name_present() {
+  grep -E "^[[:space:]-]*job_name:[[:space:]]+['\"]?${scrape_job}['\"]?[[:space:]]*$" >/dev/null
+}
+generated_job_present() {
+  "${monitoring[@]}" get secret "$prometheus_statefulset" -o jsonpath='{.data.prometheus\.yaml\.gz}' |
+    base64 -d | gzip -dc | job_name_present
+}
+loaded_job_present() {
+  curl --noproxy '*' -fsS --max-time 4 "$prometheus/api/v1/status/config" |
+    jq -er '.data.yaml' | job_name_present
+}
+wait_for_probe() {
+  local probe=$1 deadline=$((SECONDS + $2))
+  until "$probe" 2>/dev/null; do
+    (( SECONDS < deadline )) || return 1
+    sleep 3
+  done
+}
+log_scrape_config() {
+  printf '%s %s\n' "$(date -u +'%FT%TZ')" "$1" | tee -a "$output/scrape-config-status.txt"
+}
+
+if ! wait_for_probe generated_job_present 30; then
+  log_scrape_config 'Fixture job missing from generated config. Restarting the disposable Prometheus Operator.'
+  "${monitoring[@]}" rollout restart deployment/kube-prometheus-stack-operator
+  "${monitoring[@]}" rollout status deployment/kube-prometheus-stack-operator --timeout=90s
+  wait_for_probe generated_job_present 90 || {
+    log_scrape_config 'Fixture job still missing from generated config after operator restart.'
+    exit 1
+  }
+fi
+log_scrape_config 'Fixture job present in generated config.'
+
+start_forward
+if ! wait_for_probe loaded_job_present 30; then
+  log_scrape_config 'Fixture job missing from active config. Recycling the disposable Prometheus pod.'
+  [[ $("${monitoring[@]}" get statefulset "$prometheus_statefulset" -o jsonpath='{.spec.replicas}') == 1 ]]
+  prometheus_pod="$prometheus_statefulset-0"
+  old_uid=$("${monitoring[@]}" get pod "$prometheus_pod" -o jsonpath='{.metadata.uid}')
+  replacement_ready() {
+    "${monitoring[@]}" get pod "$prometheus_pod" -o json |
+      jq -e --arg old "$old_uid" '.metadata.uid != $old and any(.status.conditions[]?; .type == "Ready" and .status == "True")' >/dev/null
+  }
+  stop_forward
+  "${monitoring[@]}" delete pod "$prometheus_pod" --wait=false
+  wait_for_probe replacement_ready 120 || {
+    log_scrape_config 'Replacement Prometheus pod did not become ready.'
+    exit 1
+  }
+  start_forward
+  wait_for_probe loaded_job_present 45 || {
+    log_scrape_config 'Fixture job still missing from active config after pod recycle.'
+    exit 1
+  }
+fi
+log_scrape_config 'Fixture job present in active config.'
+
 capture_targets() {
   curl --noproxy '*' -fsS --max-time 3 "$prometheus/api/v1/targets?state=any" |
     jq -ce '
