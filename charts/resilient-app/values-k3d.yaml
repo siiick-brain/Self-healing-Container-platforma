@@ -3,5 +3,3 @@ preStopDelaySeconds: 5
 
 serviceMonitor:
   enabled: true
-
-replicaCount: 0
