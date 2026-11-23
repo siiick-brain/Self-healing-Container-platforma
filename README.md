@@ -47,7 +47,7 @@ The [core profile](clusters/gitops/core/) provides GitOps, ingress, workload pol
 | Slow response | The target pod response took 1.504 seconds with the fault active. [Latency log](results/chaos-smoke/network.txt) |
 | Memory exhaustion | All 26 ingress smoke probes after controller confirmation were healthy. [StressChaos log](results/chaos-smoke/stress.txt) |
 
-The [third hosted matrix run](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45064244265) validated 120 of 180 trials across profiles A, A2 and B. Profile C still needs 60 trials. Each cell below shows median observed recovery time and the k6 request failure rate during the observation windows.
+The [third hosted matrix run](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45064244265) validated 120 of 180 trials across profiles A, A2 and B. Profile C still needs 60 trials. Each cell below shows median observed recovery time and the k6 request failure rate during the observation windows. [Validated partial results](results/chaos-matrix/45064244265-partial-summary.json)
 
 | Scenario | A (10 trials) | A2 (10 trials) | B (20 trials) |
 | --- | --- | --- | --- |
