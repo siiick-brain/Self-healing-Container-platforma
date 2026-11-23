@@ -1,0 +1,90 @@
+{
+  "captured_at_utc": "2026-11-22T20:08:00.345494+00:00",
+  "deployment_resources": {
+    "limits": {
+      "cpu": "250m",
+      "memory": "128Mi"
+    },
+    "requests": {
+      "cpu": "50m",
+      "memory": "32Mi"
+    }
+  },
+  "deployment_uid": "18d1624a-469a-421b-a6b6-b184a19306eb",
+  "pods": {
+    "resilient-app-ff44d4655-f6pk9": {
+      "limits": {
+        "cpu": "250m",
+        "memory": "128Mi"
+      },
+      "requests": {
+        "cpu": "50m",
+        "memory": "32Mi"
+      }
+    },
+    "resilient-app-ff44d4655-ps7r7": {
+      "limits": {
+        "cpu": "250m",
+        "memory": "128Mi"
+      },
+      "requests": {
+        "cpu": "50m",
+        "memory": "32Mi"
+      }
+    },
+    "resilient-app-ff44d4655-pwdpt": {
+      "limits": {
+        "cpu": "250m",
+        "memory": "128Mi"
+      },
+      "requests": {
+        "cpu": "50m",
+        "memory": "32Mi"
+      }
+    }
+  },
+  "vpa": {
+    "policy": {
+      "resourcePolicy": {
+        "containerPolicies": [
+          {
+            "containerName": "*",
+            "controlledResources": [
+              "cpu",
+              "memory"
+            ],
+            "controlledValues": "RequestsOnly"
+          }
+        ]
+      },
+      "targetRef": {
+        "apiVersion": "apps/v1",
+        "kind": "Deployment",
+        "name": "resilient-app"
+      },
+      "updatePolicy": {
+        "updateMode": "Off"
+      }
+    },
+    "recommendation": {
+      "containerName": "app",
+      "lowerBound": {
+        "cpu": "15m",
+        "memory": "104857600"
+      },
+      "target": {
+        "cpu": "15m",
+        "memory": "104857600"
+      },
+      "uncappedTarget": {
+        "cpu": "15m",
+        "memory": "104857600"
+      },
+      "upperBound": {
+        "cpu": "5093m",
+        "memory": "5324868983"
+      }
+    },
+    "uid": "592e810e-0f1c-480a-b2ac-a049ef3bf3aa"
+  }
+}

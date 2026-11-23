@@ -1,0 +1,16 @@
+{
+  "workflow_run_id": 45087156670,
+  "baseline": {
+    "revision": "7c2a10a9fe2b01ee27535862f8a4853dd3cf239b",
+    "http_status": 200,
+    "ready_replicas": 3
+  },
+  "outage": {
+    "revision": "0af032de0dce8e35869f40c90c4a6271ff7f2ce8",
+    "bad_push_observed_epoch_s": 1795392861,
+    "bad_state_observed_epoch_s": 1795393043,
+    "http_status": 503,
+    "ready_replicas": 0
+  },
+  "recovery_verified": false
+}

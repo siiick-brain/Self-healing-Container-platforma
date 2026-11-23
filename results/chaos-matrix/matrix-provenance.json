@@ -1,0 +1,30 @@
+{
+  "A": {
+    "commit": "7fa3c0cdf6cced5d18463b35da0c8a57b5b7db27",
+    "profile": "A",
+    "image_digest": "sha256:23a37dd47ff1c53cfcc9f57b74fe41e0b9f62098ff9837d62996f001188aceaf",
+    "gitops_revision": "7fa3c0cdf6cced5d18463b35da0c8a57b5b7db27",
+    "run_id": "45064244265"
+  },
+  "A2": {
+    "commit": "7fa3c0cdf6cced5d18463b35da0c8a57b5b7db27",
+    "profile": "A2",
+    "image_digest": "sha256:23a37dd47ff1c53cfcc9f57b74fe41e0b9f62098ff9837d62996f001188aceaf",
+    "gitops_revision": "7fa3c0cdf6cced5d18463b35da0c8a57b5b7db27",
+    "run_id": "45064244265"
+  },
+  "B": {
+    "commit": "7fa3c0cdf6cced5d18463b35da0c8a57b5b7db27",
+    "profile": "B",
+    "image_digest": "sha256:23a37dd47ff1c53cfcc9f57b74fe41e0b9f62098ff9837d62996f001188aceaf",
+    "gitops_revision": "7fa3c0cdf6cced5d18463b35da0c8a57b5b7db27",
+    "run_id": "45064244265"
+  },
+  "C": {
+    "commit": "e6bab628d38eca3978e7135804ed01b30cc7b5f5",
+    "gitops_revision": "7fa3c0cdf6cced5d18463b35da0c8a57b5b7db27",
+    "profile": "C",
+    "image_digest": "sha256:23a37dd47ff1c53cfcc9f57b74fe41e0b9f62098ff9837d62996f001188aceaf",
+    "run_id": "45086179593"
+  }
+}

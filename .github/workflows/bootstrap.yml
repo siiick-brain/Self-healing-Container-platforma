@@ -10,6 +10,7 @@ jobs:
       - run: |
           for script in scripts/*.sh .githooks/commit-msg; do bash -n "$script" || exit; done
           make lint
+          make report
   authorship:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

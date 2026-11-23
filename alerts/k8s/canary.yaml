@@ -10,10 +10,12 @@ spec:
     - name: work-success-ratio
       initialDelay: 2m
       interval: 1m
-      count: 3
+      count: 5
       failureLimit: 0
+      inconclusiveLimit: 2
+      consecutiveSuccessLimit: 3
       successCondition: len(result) == 1 && result[0] >= 0.995
-      failureCondition: len(result) != 1 || result[0] < 0.995
+      failureCondition: len(result) == 1 && result[0] < 0.995
       provider:
         prometheus:
           address: http://kube-prometheus-stack-prometheus.monitoring.svc:9090

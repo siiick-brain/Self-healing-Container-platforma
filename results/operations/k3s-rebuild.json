@@ -1,0 +1,26 @@
+{
+  "workflow_run_id": 45086783637,
+  "gitops_revision": "7c2a10a9fe2b01ee27535862f8a4853dd3cf239b",
+  "baseline": {
+    "artifact_id": 14779593151,
+    "server_version": "v1.33.5+k3s1",
+    "nodes": 3,
+    "core_verification_s": 192,
+    "app_image_digest": "sha256:5dbf61cc2f1551fd2600c4efcc4d37eb7db5f7c83f6d938d69006dfbc06780f4",
+    "ready_prometheus_targets": 3,
+    "ingress_response": "ok",
+    "network_policy": "expected allow and deny",
+    "gitops": "Synced and Healthy"
+  },
+  "candidate": {
+    "artifact_id": 14779921307,
+    "server_version": "v1.33.6+k3s1",
+    "nodes": 3,
+    "core_verification_s": 237,
+    "app_image_digest": "sha256:5dbf61cc2f1551fd2600c4efcc4d37eb7db5f7c83f6d938d69006dfbc06780f4",
+    "ready_prometheus_targets": 3,
+    "ingress_response": "ok",
+    "network_policy": "expected allow and deny",
+    "gitops": "Synced and Healthy"
+  }
+}

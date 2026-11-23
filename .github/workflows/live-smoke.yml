@@ -74,6 +74,10 @@ jobs:
         run: |
           set -o pipefail
           bash clusters/tests/network-policy.sh 2>&1 | tee results/ci/network-policy.txt
+      - name: Verify demo admission policy
+        run: |
+          set -o pipefail
+          bash clusters/tests/admission-policy.sh 2>&1 | tee results/ci/admission-policy.txt
       - name: Verify Argo CD drift correction
         id: drift
         if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.verify_drain && steps.core.outcome == 'success' }}
