@@ -1,6 +1,6 @@
 # Self-healing container platform
 
-A bad deploy can send requests to an unhealthy replica and consume the service's error budget. In this k3d lab, tuned probes cut the slow-response request failure rate from 30.80% in profile A to 11.57% in profile B. In a separate bad-release test, Argo Rollouts aborted the canary after about 121 seconds. [Matrix results](results/chaos-matrix/matrix-summary.json) · [Canary results](results/operations/canary-abort.json)
+I built this k3d platform to measure what clients experience during a pod failure or a bad release. I used recovery time and failed requests to evaluate the design because a workload can recover and still consume its error budget along the way. In the slow-response test, the tuned profile cut request failures from 30.80% to 11.57%. In a separate release test, Argo Rollouts aborted the bad canary after about 121 seconds. [Matrix results](results/chaos-matrix/matrix-summary.json) · [Canary results](results/operations/canary-abort.json)
 
 ## Results
 
@@ -13,7 +13,7 @@ A bad deploy can send requests to an unhealthy replica and consume the service's
 | GitOps rollback | HTTP 200 and three ready replicas returned 7 seconds after the observed revert push. [Rollback results](results/operations/rollback-retest.json) |
 | Canary abort | The controller aborted in 120.667 seconds. The bad revision served 31.98% of requests before the abort. [Canary results](results/operations/canary-abort.json) |
 
-The [release verification record](results/README.md) links the recovery matrix, delivery proofs, and operational checks. [Fault smoke evidence](results/chaos-smoke/)
+For release recovery, I measured a Git revert from the observed push through reconciliation. For the canary, I measured the time to controller abort and the share of traffic that reached the bad revision. Those timings start at different events. [Release verification record](results/README.md) · [Fault smoke evidence](results/chaos-smoke/)
 
 ## Architecture
 
@@ -38,7 +38,7 @@ flowchart LR
   Prom -.->|OOM alert via Alertmanager| Archive
 ```
 
-The [core profile](clusters/gitops/core/) provides GitOps, ingress, workload policy and monitoring. The [full profile](clusters/gitops/full/) adds fault injection, automated diagnostics, rollout analysis and resource recommendations. [Architecture and boundaries](docs/ARCHITECTURE.md)
+I kept the core profile small enough to bring up for routine changes. It covers GitOps reconciliation, ingress, workload policy, and monitoring. I use the full profile for fault injection, automated diagnostics, rollout analysis, and resource recommendations. Git holds the desired state, and Argo CD reconciles the cluster to it. [Core profile](clusters/gitops/core/) · [Full profile](clusters/gitops/full/) · [Architecture and boundaries](docs/ARCHITECTURE.md)
 
 ## Failure scenarios
 
@@ -48,7 +48,7 @@ The [core profile](clusters/gitops/core/) provides GitOps, ingress, workload pol
 | Slow response | The target pod response took 1.504 seconds with the fault active. [Latency log](results/chaos-smoke/network.txt) |
 | Memory exhaustion | All 26 ingress smoke probes after controller confirmation were healthy. [StressChaos log](results/chaos-smoke/stress.txt) |
 
-The hosted matrix validated all 180 trials. Each cell shows median and p95 recovery time in seconds, then the k6 request failure rate during the observation windows. Run `make report` to regenerate the table from the checked-in observations. [Complete matrix](results/chaos-matrix/matrix-summary.json) · [Run provenance](results/chaos-matrix/matrix-provenance.json)
+I held the application image, GitOps revision, and load settings constant across profiles and validated all 180 hosted trials. Each cell reports median and p95 recovery time in seconds, followed by the k6 request failure rate during the observation windows. Run `make report` to regenerate the table from the checked-in observations. [Complete matrix](results/chaos-matrix/matrix-summary.json) · [Run provenance](results/chaos-matrix/matrix-provenance.json)
 
 | Scenario | A (10 trials) | A2 (10 trials) | B (20 trials) | C (20 trials) |
 | --- | --- | --- | --- | --- |
@@ -56,11 +56,11 @@ The hosted matrix validated all 180 trials. Each cell shows median and p95 recov
 | Slow response | 16.04 / 16.78 / 30.80% | 16.04 / 16.80 / 30.85% | 16.85 / 17.33 / 11.57% | 16.60 / 17.11 / 13.44% |
 | Memory exhaustion | 15.84 / 16.13 / 0% | 15.81 / 16.11 / 0% | 15.88 / 16.04 / 0% | 15.90 / 16.25 / 0% |
 
-Hosted latency trials use the app-level control after NetworkChaos failed to configure iptables. [NetworkChaos postmortem](docs/postmortems/2026-11-22-hosted-network-chaos.md) · [Matrix postmortem](docs/postmortems/2026-11-22-hosted-recovery-matrix.md) · [Partial matrix summary](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45064244265/artifacts/14775560729)
+I used the app-level delay for every hosted latency trial after NetworkChaos failed to configure iptables. The latency results apply to that fault mechanism. [NetworkChaos postmortem](docs/postmortems/2026-11-22-hosted-network-chaos.md) · [Matrix postmortem](docs/postmortems/2026-11-22-hosted-recovery-matrix.md) · [Partial matrix summary](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45064244265/artifacts/14775560729)
 
 ## OpenShift
 
-The [OpenShift comparison](docs/OPENSHIFT_COMPARISON.md) is based on configuration and documentation. Runtime checks remain pending.
+I compared OpenShift's documented behavior with the k3d configuration. The OpenShift runtime checks are still pending. [OpenShift comparison](docs/OPENSHIFT_COMPARISON.md)
 
 | Area | k3d | OpenShift to verify |
 | --- | --- | --- |
@@ -70,7 +70,7 @@ The [OpenShift comparison](docs/OPENSHIFT_COMPARISON.md) is based on configurati
 
 ## Quick start
 
-Use the published implementation and run these commands from WSL2.
+From the repository root in WSL2, check the environment and start the core profile. The final command verifies that ingress serves `/work`.
 
 ```bash
 bash scripts/check-environment.sh
@@ -80,7 +80,7 @@ curl -fsS http://127.0.0.1:8080/work
 
 ## SLOs
 
-The [SLO policy](docs/SLO.md) sets targets for availability and p95 latency. The [Grafana demo](results/observability/grafana-demo.gif) shows both dashboards with live Prometheus samples from a short lab window. [Dashboard evidence](results/observability/)
+I track request availability and p95 latency because each captures a different way clients can be affected. The Grafana demo shows both dashboards using live Prometheus samples from a short lab window. [SLO policy](docs/SLO.md) · [Grafana demo](results/observability/grafana-demo.gif) · [Dashboard evidence](results/observability/)
 
 <details>
 <summary>Grafana dashboards</summary>
@@ -93,7 +93,7 @@ The [SLO policy](docs/SLO.md) sets targets for availability and p95 latency. The
 
 ## Cost
 
-Run k3d and object storage locally. CI and image hosting use the public repository. AKS is a static Terraform example. See [scaling and cost](docs/SCALING_AND_COST.md).
+I kept the cluster and object storage local and used the public repository for CI and image hosting. The AKS example uses static Terraform validation, so it requires no cloud cluster. [Scaling and cost](docs/SCALING_AND_COST.md)
 
 ## Repository map
 
@@ -107,4 +107,4 @@ Run k3d and object storage locally. CI and image hosting use the public reposito
 
 ## What I would do differently in production
 
-Use multiple control-plane nodes, private ingress for operational endpoints and managed alert routing. Run the failure suite against the actual production topology before committing to recovery objectives. See [architecture](docs/ARCHITECTURE.md) and the [threat model](docs/THREAT_MODEL.md).
+The lab has one control-plane node. In production, I'd use a highly available control plane, expose operational endpoints through private ingress, and use managed alert routing. I'd rerun the failure suite against the production topology before committing to recovery objectives. [Architecture](docs/ARCHITECTURE.md) · [Threat model](docs/THREAT_MODEL.md)
