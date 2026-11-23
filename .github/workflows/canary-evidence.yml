@@ -52,6 +52,9 @@ jobs:
           mkdir -p results/ci/canary
           kubectl --context k3d-self-healing --request-timeout=15s -n demo get rollout,analysisruns -o wide > results/ci/canary/resources.txt 2>&1 || true
           kubectl --context k3d-self-healing --request-timeout=15s -n demo get events --sort-by=.lastTimestamp > results/ci/canary/events.txt 2>&1 || true
+          kubectl --context k3d-self-healing --request-timeout=15s -n demo get podmonitor resilient-canary-proof -o yaml > results/ci/canary/pod-monitor.yaml 2>&1 || true
+          kubectl --context k3d-self-healing --request-timeout=15s -n demo get endpointslices -l 'kubernetes.io/service-name in (resilient-canary-proof,resilient-canary-proof-canary)' -o wide > results/ci/canary/endpoint-slices.txt 2>&1 || true
+          kubectl --context k3d-self-healing --request-timeout=15s -n monitoring get prometheus -o json | jq '.items | map({name: .metadata.name, serviceMonitorSelector: .spec.serviceMonitorSelector, serviceMonitorNamespaceSelector: .spec.serviceMonitorNamespaceSelector, podMonitorSelector: .spec.podMonitorSelector, podMonitorNamespaceSelector: .spec.podMonitorNamespaceSelector})' > results/ci/canary/monitor-selectors.json || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -10,7 +10,8 @@ A bad deploy can send requests to an unhealthy replica and consume the service's
 | Slow response | The app-level fault delayed the selected pod, then reset successfully. [Latency log](results/chaos-smoke/network.txt) |
 | Memory exhaustion | StressChaos triggered an OOM kill and the target container restarted. [StressChaos log](results/chaos-smoke/stress.txt) |
 | Diagnostics | MinIO held an archive for the terminated pod UID. [Archive record](results/chaos-smoke/oom-archive.json) |
-| GitOps rollback and canary abort | Separate results pending. [Delivery design](docs/adr/rollouts.md) |
+| GitOps rollback | HTTP 200 and three ready replicas returned 7 seconds after the observed revert push. [Rollback results](results/operations/rollback-retest.json) |
+| Canary abort | Verification pending. [Delivery design](docs/adr/rollouts.md) |
 
 The [live smoke run](results/chaos-smoke/) verified fault injection and cleanup. The [recovery matrix](chaos/README.md#hosted-matrix) measures recovery time and request loss across the probe and rollout profiles.
 

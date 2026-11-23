@@ -38,9 +38,10 @@ k3d image import -c self-healing "$stable_image" "$bad_image"
 helm template "$release" charts/resilient-app -n demo \
   -f charts/resilient-app/values-k3d.yaml -f chaos/profiles/c.yaml \
   --set-string image.repository="$release" --set-string image.tag=stable \
+  --set serviceMonitor.enabled=false \
   --set 'rollouts.canary.steps[0].setWeight=33' \
   --set-string 'rollouts.canary.steps[1].pause.duration=8m' | "${demo[@]}" apply -f -
-"${kube[@]}" apply -f clusters/tests/canary-ingress.yaml
+"${kube[@]}" apply -f clusters/tests/canary-ingress.yaml -f clusters/tests/canary-podmonitor.yaml
 "${demo[@]}" wait rollout "$release" --for='jsonpath={.status.phase}=Healthy' --timeout=120s
 "${rollout[@]}" > "$output/baseline-rollout.json"
 stable_hash=$(jq -er '.status.stableRS | select(length > 0)' "$output/baseline-rollout.json")
@@ -63,17 +64,27 @@ cleanup() {
 trap cleanup EXIT
 prometheus=http://127.0.0.1:19090
 capture_targets() {
-  curl --noproxy '*' -fsS --max-time 3 "$prometheus/api/v1/targets?state=active" |
-    jq -e --arg service "$release-metrics" '
-      .data.activeTargets | map(select(.labels.namespace == "demo" and .labels.service == $service) |
-        {pod: .labels.pod, revision: .labels.rollouts_pod_template_hash,
-         discoveredRevision: .discoveredLabels.__meta_kubernetes_pod_label_rollouts_pod_template_hash,
-         health, lastScrape, lastError})'
+  curl --noproxy '*' -fsS --max-time 3 "$prometheus/api/v1/targets?state=any" |
+    jq -ce '
+      def demo: .labels.namespace == "demo" or .discoveredLabels.__meta_kubernetes_namespace == "demo";
+      .data | {
+        active: [.activeTargets[] | select(demo) |
+          {scrapePool, job: .labels.job, service: .labels.service, proof: .labels.canary_proof,
+           pod: .labels.pod, revision: .labels.rollouts_pod_template_hash,
+           discoveredRevision: .discoveredLabels.__meta_kubernetes_pod_label_rollouts_pod_template_hash,
+           health, lastScrape, lastError}][:50],
+        dropped: [.droppedTargets[] | select(demo) |
+          {job: .discoveredLabels.job, pod: .discoveredLabels.__meta_kubernetes_pod_name,
+           port: .discoveredLabels.__meta_kubernetes_pod_container_port_name,
+           revision: .discoveredLabels.__meta_kubernetes_pod_label_rollouts_pod_template_hash}][:50]
+      }'
 }
 
 deadline=$((SECONDS + 90))
 until capture_targets > "$output/stable-targets.json" 2> "$output/prometheus-target-error.txt" &&
-    jq -e --arg stable "$stable_hash" 'length == 3 and all(.[]; .revision == $stable and .health == "up")' \
+    jq -e --arg stable "$stable_hash" --arg release "$release" '
+      [.active[] | select(.proof == $release)] |
+      length == 3 and all(.[]; .revision == $stable and .health == "up")' \
       "$output/stable-targets.json" >/dev/null; do
   (( SECONDS < deadline )) || { echo 'Prometheus did not scrape three stable targets with the rollout hash.' >&2; exit 1; }
   sleep 3
@@ -109,7 +120,7 @@ bad_hash=$(jq -er '.status.currentPodHash' "$output/aborted-rollout.json")
 aborted_at=$(jq -er '.status.abortedAt' "$output/aborted-rollout.json")
 "${demo[@]}" get analysisruns -o json > "$output/analysis-runs.json"
 curl --noproxy '*' -fsS --max-time 5 --get "$prometheus/api/v1/query" \
-  --data-urlencode "query=sum by (rollouts_pod_template_hash,status) (rate(http_requests_total{namespace=\"demo\",service=\"$release-metrics\",path=\"/work\"}[2m]))" \
+  --data-urlencode "query=sum by (rollouts_pod_template_hash,status) (rate(http_requests_total{namespace=\"demo\",canary_proof=\"$release\",path=\"/work\"}[2m]))" \
   --data-urlencode "time=$aborted_at" > "$output/rollout-request-rates.json" || true
 analysis=$(jq -ec --arg owner "$rollout_uid" --arg bad "$bad_hash" '
   [.items[] |

@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: resilient-canary-proof
+  namespace: demo
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: resilient-canary-proof
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_rollouts_pod_template_hash]
+          regex: (.+)
+          targetLabel: rollouts_pod_template_hash
+        - targetLabel: canary_proof
+          replacement: resilient-canary-proof

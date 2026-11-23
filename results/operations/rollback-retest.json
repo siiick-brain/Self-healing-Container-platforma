@@ -1,0 +1,12 @@
+{
+  "bad_revision": "bbbf45a65847c80db2c5faba9a8d8a5765aefda3",
+  "reverted_revision": "7b4ff970c6d058e4ed1b92d8c3f1a439e0fbee74",
+  "http_status": 200,
+  "ready_replicas": 3,
+  "bad_push_observed_epoch_s": 1795394223,
+  "bad_state_observed_epoch_s": 1795394230,
+  "revert_push_observed_epoch_s": 1795394236,
+  "healthy_observed_epoch_s": 1795394243,
+  "mttr_s": 20,
+  "revert_to_healthy_s": 7
+}
