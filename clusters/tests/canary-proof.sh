@@ -49,7 +49,36 @@ curl --fail --silent --show-error --retry 10 --retry-all-errors --max-time 5 \
   -H 'Host: canary-proof.localhost' http://127.0.0.1:8080/work | grep -Fx ok
 
 load_pid=
-trap 'if [[ -n $load_pid ]]; then kill "$load_pid" 2>/dev/null || true; wait "$load_pid" 2>/dev/null || true; fi' EXIT
+kubectl --context k3d-self-healing -n monitoring port-forward --address 127.0.0.1 \
+  svc/kube-prometheus-stack-prometheus 19090:9090 > "$output/prometheus-forward.txt" 2>&1 &
+forward_pid=$!
+cleanup() {
+  if [[ -n $load_pid ]]; then
+    kill "$load_pid" 2>/dev/null || true
+    wait "$load_pid" 2>/dev/null || true
+  fi
+  kill "$forward_pid" 2>/dev/null || true
+  wait "$forward_pid" 2>/dev/null || true
+}
+trap cleanup EXIT
+prometheus=http://127.0.0.1:19090
+capture_targets() {
+  curl --noproxy '*' -fsS --max-time 3 "$prometheus/api/v1/targets?state=active" |
+    jq -e --arg service "$release-metrics" '
+      .data.activeTargets | map(select(.labels.namespace == "demo" and .labels.service == $service) |
+        {pod: .labels.pod, revision: .labels.rollouts_pod_template_hash,
+         discoveredRevision: .discoveredLabels.__meta_kubernetes_pod_label_rollouts_pod_template_hash,
+         health, lastScrape, lastError})'
+}
+
+deadline=$((SECONDS + 90))
+until capture_targets > "$output/stable-targets.json" 2> "$output/prometheus-target-error.txt" &&
+    jq -e --arg stable "$stable_hash" 'length == 3 and all(.[]; .revision == $stable and .health == "up")' \
+      "$output/stable-targets.json" >/dev/null; do
+  (( SECONDS < deadline )) || { echo 'Prometheus did not scrape three stable targets with the rollout hash.' >&2; exit 1; }
+  sleep 3
+done
+
 k6 run --out "json=$output/load.ndjson" clusters/tests/canary-load.js > "$output/k6.log" 2>&1 &
 load_pid=$!
 sleep 12
@@ -59,18 +88,29 @@ patch=$(jq -nc --arg image "$bad_image" '[{op: "replace", path: "/spec/template/
 "${demo[@]}" patch rollout "$release" --type=json -p "$patch"
 
 deadline=$((SECONDS + 300))
+next_scrape_capture=$SECONDS
 until "${rollout[@]}" > "$output/aborted-rollout.json" &&
     jq -e --arg stable "$stable_hash" '
       .status.abort == true and .status.stableRS == $stable and
       (.status.currentPodHash | type == "string" and . != $stable) and
       (.status.abortedAt | type == "string")' "$output/aborted-rollout.json" >/dev/null; do
   (( SECONDS < deadline )) || { echo 'The canary did not abort within 300 seconds.' >&2; exit 1; }
+  if (( SECONDS >= next_scrape_capture )); then
+    if target_snapshot=$(capture_targets 2>> "$output/prometheus-target-error.txt"); then
+      jq -cn --arg time "$(date -u +'%FT%TZ')" --argjson targets "$target_snapshot" \
+        '{time: $time, targets: $targets}' >> "$output/rollout-targets.ndjson"
+    fi
+    next_scrape_capture=$((SECONDS + 10))
+  fi
   sleep 2
 done
 
 bad_hash=$(jq -er '.status.currentPodHash' "$output/aborted-rollout.json")
 aborted_at=$(jq -er '.status.abortedAt' "$output/aborted-rollout.json")
 "${demo[@]}" get analysisruns -o json > "$output/analysis-runs.json"
+curl --noproxy '*' -fsS --max-time 5 --get "$prometheus/api/v1/query" \
+  --data-urlencode "query=sum by (rollouts_pod_template_hash,status) (rate(http_requests_total{namespace=\"demo\",service=\"$release-metrics\",path=\"/work\"}[2m]))" \
+  --data-urlencode "time=$aborted_at" > "$output/rollout-request-rates.json" || true
 analysis=$(jq -ec --arg owner "$rollout_uid" --arg bad "$bad_hash" '
   [.items[] |
     select(any(.metadata.ownerReferences[]?; .uid == $owner)) |

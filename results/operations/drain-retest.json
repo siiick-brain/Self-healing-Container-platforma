@@ -1,0 +1,25 @@
+{
+  "node": "k3d-self-healing-agent-0",
+  "evicted_pod_uid": "44a1a4f8-a0c5-469f-89ba-af99090dde4d",
+  "drain_started_at": "2026-11-23T00:04:16.545782405Z",
+  "drain_finished_at": "2026-11-23T00:05:00.380191290Z",
+  "drain_exit_code": 0,
+  "uncordoned": true,
+  "pod_removed": true,
+  "ready_pods": 3,
+  "traffic": {
+    "before": {
+      "requests": 10,
+      "failures": 0
+    },
+    "during": {
+      "requests": 439,
+      "failures": 0
+    },
+    "after": {
+      "requests": 2552,
+      "failures": 0
+    }
+  },
+  "dropped_iterations": 0
+}

@@ -79,7 +79,7 @@ curl -fsS http://127.0.0.1:8080/work
 
 ## SLOs
 
-The [SLO policy](docs/SLO.md) sets targets for availability and p95 latency. The [Grafana smoke evidence](results/observability/) shows that the dashboards rendered with live Prometheus samples. The capture covers a short lab window.
+The [SLO policy](docs/SLO.md) sets targets for availability and p95 latency. The [Grafana demo](results/observability/grafana-demo.gif) shows both dashboards with live Prometheus samples from a short lab window. [Dashboard evidence](results/observability/)
 
 <details>
 <summary>Grafana dashboards</summary>
