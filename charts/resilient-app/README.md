@@ -8,6 +8,8 @@ The k3d profile requires the Prometheus Operator CRDs and enables the lab fault 
 
 The app has a read-only root filesystem. The diagnostics volume gives the heap profiler a writable location and is scoped to the pod. Do not repeat `CHAOS_ENABLED`, `MEMORY_LIMIT_BYTES` or `HEAP_PROFILE_PATH` in the extra `env` list.
 
+The k3d profile sets `preStopDelaySeconds` to five so ingress can update its endpoints while the app still accepts requests. Kubernetes runs the sleep hook before signaling the app to shut down. The generic and AKS profiles leave the hook disabled.
+
 ## Render and validate
 
 Run from the repository root.

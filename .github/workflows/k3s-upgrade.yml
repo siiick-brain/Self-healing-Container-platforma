@@ -1,0 +1,140 @@
+name: k3s rebuild comparison
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: baseline
+            image: rancher/k3s:v1.33.5-k3s1
+          - variant: candidate
+            image: rancher/k3s:v1.33.6-k3s1
+    env:
+      K3D_AGENTS: '2'
+      K3D_NODE_EXPORTER: 'false'
+      GITOPS_REVISION: ${{ github.sha }}
+      K3S_IMAGE: ${{ matrix.image }}
+      VARIANT: ${{ matrix.variant }}
+      EVIDENCE: results/upgrade
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.19.0
+      - name: Install k3d and prepare the image pin
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin" "$EVIDENCE"
+          bin="$RUNNER_TEMP/bin/k3d"
+          curl -fsSL --retry 3 -o "$bin" https://github.com/k3d-io/k3d/releases/download/v5.8.3/k3d-linux-amd64
+          chmod +x "$bin"
+          "$bin" version | tee "$EVIDENCE/k3d.txt"
+          grep -Fx 'k3d version v5.8.3' "$EVIDENCE/k3d.txt"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          if (( $(sysctl -n fs.inotify.max_user_instances) < 1024 )); then
+            sudo sysctl -w fs.inotify.max_user_instances=1024
+          fi
+          grep -Fx 'image: rancher/k3s:v1.33.5-k3s1' clusters/k3d.yaml
+          if [[ $VARIANT == candidate ]]; then
+            sed -i "s|^image: .*|image: $K3S_IMAGE|" clusters/k3d.yaml
+          fi
+          grep -Fx "image: $K3S_IMAGE" clusters/k3d.yaml > "$EVIDENCE/k3s-image.txt"
+      - name: Build and verify core
+        run: |
+          set -o pipefail
+          bash clusters/platform.sh core 2>&1 | tee "$EVIDENCE/up-core.txt"
+          kube=(kubectl --context k3d-self-healing --request-timeout=12s)
+          expected=${K3S_IMAGE##*:}
+          expected=${expected/-k3s/+k3s}
+          "${kube[@]}" version -o json | tee "$EVIDENCE/version.json" |
+            jq -e --arg expected "$expected" '.serverVersion.gitVersion == $expected'
+          "${kube[@]}" get nodes -o json |
+            jq -e --arg expected "$expected" --argjson count "$((K3D_AGENTS + 1))" '
+              [.items[] | {name: .metadata.name, version: .status.nodeInfo.kubeletVersion}]
+              | select(length == $count and all(.[]; .version == $expected))
+            ' > "$EVIDENCE/nodes.json"
+          "${kube[@]}" -n argocd get applications -o wide > "$EVIDENCE/gitops.txt"
+          "${kube[@]}" -n argocd get application resilient-app -o json |
+            jq -e --arg revision "$GITOPS_REVISION" '
+              .status.sync.revision == $revision and .status.sync.status == "Synced"
+              and .status.health.status == "Healthy"
+            '
+          "${kube[@]}" -n demo get pods -l app.kubernetes.io/name=resilient-app -o json |
+            jq -er '[.items[].status.containerStatuses[]? | select(.name == "app" and .ready) | .imageID]
+              | select(length == 3) | unique | select(length == 1) | .[0] | capture("(?<digest>sha256:[0-9a-f]{64})$").digest' \
+            > "$EVIDENCE/app-digest.txt"
+          curl -fsS --retry 5 --retry-connrefused --max-time 10 http://127.0.0.1:8080/work |
+            tee "$EVIDENCE/ingress.txt"
+          grep -Fx 'ok' "$EVIDENCE/ingress.txt"
+          bash clusters/tests/network-policy.sh 2>&1 | tee "$EVIDENCE/network-policy.txt"
+          cp results/env/docker-stats-core.txt "$EVIDENCE/docker-stats.txt"
+      - name: Verify Prometheus scrapes the app
+        run: |
+          set -o pipefail
+          kubectl --context k3d-self-healing -n monitoring port-forward --address 127.0.0.1 \
+            svc/kube-prometheus-stack-prometheus 19090:9090 > "$EVIDENCE/prometheus-forward.txt" 2>&1 &
+          forward_pid=$!
+          trap 'kill "$forward_pid" 2>/dev/null || true' EXIT
+          endpoint=http://127.0.0.1:19090
+          for (( attempt = 1; attempt <= 30; attempt++ )); do
+            if curl --noproxy '*' -fsS --max-time 3 "$endpoint/api/v1/targets?state=active" 2>/dev/null |
+              jq -e '
+                [.data.activeTargets[] | select(.labels.namespace == "demo" and .labels.service == "resilient-app-metrics")
+                  | {pod: .labels.pod, health}]
+                | select(length == 3 and (map(.pod) | unique | length) == 3
+                  and all(.[]; .pod != null and .health == "up"))
+              ' > "$EVIDENCE/scrapes.json"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Prometheus did not scrape all three app replicas.' >&2
+          exit 1
+      - name: Capture cluster events on failure
+        if: failure()
+        run: |
+          kubectl --context k3d-self-healing --request-timeout=10s get events -A --sort-by=.lastTimestamp \
+            > "$EVIDENCE/events.txt" 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k3s-rebuild-${{ matrix.variant }}
+          path: results/upgrade/
+          if-no-files-found: error
+      - name: Remove the disposable cluster
+        if: always()
+        run: |
+          if command -v k3d >/dev/null; then k3d cluster delete self-healing; fi
+
+  compare:
+    needs: rebuild
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: k3s-rebuild-*
+      - name: Check both builds used the same app
+        run: |
+          base=k3s-rebuild-baseline
+          candidate=k3s-rebuild-candidate
+          if ! cmp -s "$base/app-digest.txt" "$candidate/app-digest.txt"; then
+            echo 'The app digest changed between builds. Repeat both builds on the same digest.' >&2
+            exit 1
+          fi
+          {
+            echo 'Both fresh clusters passed core GitOps, ingress, NetworkPolicy and app scrape checks.'
+            echo
+            echo '| Build | Kubernetes | App image digest |'
+            echo '| --- | --- | --- |'
+            printf '| Baseline | %s | %s |\n' "$(jq -r '.serverVersion.gitVersion' "$base/version.json")" "$(cat "$base/app-digest.txt")"
+            printf '| Candidate | %s | %s |\n' "$(jq -r '.serverVersion.gitVersion' "$candidate/version.json")" "$(cat "$candidate/app-digest.txt")"
+          } >> "$GITHUB_STEP_SUMMARY"

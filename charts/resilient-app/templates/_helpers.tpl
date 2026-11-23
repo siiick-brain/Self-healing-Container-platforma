@@ -53,6 +53,12 @@ spec:
         {{- toYaml .Values.resources | nindent 8 }}
       securityContext:
         {{- toYaml .Values.securityContext | nindent 8 }}
+      {{- if gt (int .Values.preStopDelaySeconds) 0 }}
+      lifecycle:
+        preStop:
+          sleep:
+            seconds: {{ .Values.preStopDelaySeconds | int }}
+      {{- end }}
       {{- if .Values.livenessProbe.enabled }}
       livenessProbe:
         {{- toYaml (omit .Values.livenessProbe "enabled") | nindent 8 }}

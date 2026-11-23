@@ -18,6 +18,18 @@ on:
         description: Run the three isolated Chaos Mesh smoke checks
         type: boolean
         default: false
+      verify_vpa:
+        description: Record VPA recommendations before and after the fault smoke checks
+        type: boolean
+        default: false
+      verify_drain:
+        description: Verify Argo CD drift correction and drain a disposable agent under k6 load
+        type: boolean
+        default: false
+      record_demo:
+        description: Record a GIF of the live RED and SLO dashboards
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -25,7 +37,7 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     env:
       K3D_AGENTS: '2'
       K3D_NODE_EXPORTER: 'false'
@@ -62,56 +74,55 @@ jobs:
         run: |
           set -o pipefail
           bash clusters/tests/network-policy.sh 2>&1 | tee results/ci/network-policy.txt
+      - name: Verify Argo CD drift correction
+        id: drift
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.verify_drain && steps.core.outcome == 'success' }}
+        timeout-minutes: 5
+        run: |
+          set -o pipefail
+          bash clusters/tests/gitops-drift.sh 2>&1 | tee results/ci/gitops-drift.txt
+      - name: Verify node drain under load
+        if: ${{ !cancelled() && steps.drift.outcome == 'success' }}
+        timeout-minutes: 7
+        run: |
+          set -o pipefail
+          archive=k6-v0.58.0-linux-amd64.tar.gz
+          release=https://github.com/grafana/k6/releases/download/v0.58.0
+          (
+            cd "$RUNNER_TEMP"
+            curl -fsSLO "$release/$archive"
+            curl -fsSLO "$release/k6-v0.58.0-checksums.txt"
+            awk -v archive="$archive" '$2 == archive || $2 == ("*" archive)' k6-v0.58.0-checksums.txt |
+              sha256sum --check --strict
+            tar -xzf "$archive"
+          )
+          export PATH="$RUNNER_TEMP/k6-v0.58.0-linux-amd64:$PATH"
+          bash clusters/tests/drain-under-load.sh results/ci/drain 2>&1 | tee results/ci/drain-proof.txt
       - name: Prepare disposable full-profile dependencies
         id: full_dependencies
         if: ${{ !cancelled() && steps.core.outcome == 'success' }}
-        run: |
-          docker build -t ghcr.io/siiick-brain/diagnostics-receiver:main ops/receiver
-          k3d image import -c self-healing ghcr.io/siiick-brain/diagnostics-receiver:main
-          user=$(openssl rand -hex 12)
-          password=$(openssl rand -hex 24)
-          echo "::add-mask::$user"
-          echo "::add-mask::$password"
-          kubectl --context k3d-self-healing -n storage create secret generic minio-credentials \
-            --from-literal=root-user="$user" --from-literal=root-password="$password"
-          kubectl --context k3d-self-healing -n ops create secret generic diagnostics-minio \
-            --from-literal=access-key="$user" --from-literal=secret-key="$password"
+        run: bash clusters/tests/ci-diagnostics.sh prepare
       - name: Start and verify full
         id: full
         if: ${{ !cancelled() && steps.full_dependencies.outcome == 'success' }}
         run: |
           set -o pipefail
           bash clusters/platform.sh full 2>&1 | tee results/ci/up-full.txt
+          bash clusters/tests/ci-diagnostics.sh provision | tee results/ci/diagnostics-storage.txt
           kubectl --context k3d-self-healing -n demo get analysistemplate resilient-app-success |
             tee results/ci/canary-template.txt
-      - name: Verify diagnostics storage
-        if: ${{ !cancelled() && steps.full.outcome == 'success' }}
-        run: |
-          set -o pipefail
-          kubectl --context k3d-self-healing -n ops exec -i deployment/diagnostics-receiver -- python - <<'PY' | tee results/ci/diagnostics-storage.txt
-          import boto3
-          from botocore.config import Config
-
-          s3 = boto3.client(
-              "s3", endpoint_url="http://minio.storage.svc:9000", region_name="us-east-1",
-              config=Config(s3={"addressing_style": "path"}, connect_timeout=5, read_timeout=10),
-          )
-          bucket = "diagnostics"
-          key = "ci/storage-smoke"
-          payload = b"diagnostics storage smoke"
-          s3.create_bucket(Bucket=bucket)
-          s3.put_object(Bucket=bucket, Key=key, Body=payload)
-          try:
-              assert s3.get_object(Bucket=bucket, Key=key)["Body"].read() == payload
-          finally:
-              s3.delete_object(Bucket=bucket, Key=key)
-          print("Receiver credentials can write and read the diagnostics bucket.")
-          PY
       - name: Capture Grafana evidence
         id: grafana
         if: ${{ !cancelled() && steps.full.outcome == 'success' }}
-        timeout-minutes: 8
-        run: bash scripts/capture-grafana.sh "$RUNNER_TEMP/grafana-evidence"
+        timeout-minutes: 10
+        env:
+          RECORD_GRAFANA_DEMO: ${{ github.event_name == 'workflow_dispatch' && inputs.record_demo }}
+        run: |
+          if [[ $RECORD_GRAFANA_DEMO == true ]] && ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -q
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          bash scripts/capture-grafana.sh "$RUNNER_TEMP/grafana-evidence"
       - name: Upload Grafana evidence
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() && steps.grafana.outcome == 'success' }}
@@ -122,8 +133,15 @@ jobs:
             ${{ runner.temp }}/grafana-evidence/grafana-red.png
             ${{ runner.temp }}/grafana-evidence/grafana-slo.png
             ${{ runner.temp }}/grafana-evidence/grafana-prometheus.json
+            ${{ runner.temp }}/grafana-evidence/grafana-demo.gif
+      - name: Record the VPA baseline and recommendation
+        id: vpa_before
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.verify_vpa && steps.full.outcome == 'success' }}
+        timeout-minutes: 6
+        run: python3 clusters/tests/vpa-evidence.py before results/ci/vpa
       - name: Verify local fault experiments
-        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.verify_faults && steps.full.outcome == 'success' }}
+        id: faults
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && (inputs.verify_faults || inputs.verify_vpa) && steps.full.outcome == 'success' }}
         timeout-minutes: 6
         run: |
           test -f chaos/smoke.py
@@ -163,8 +181,12 @@ jobs:
             fi
           done
           exit "$failed"
+      - name: Verify the VPA left app resources unchanged
+        if: ${{ !cancelled() && steps.vpa_before.outcome == 'success' && steps.faults.outcome == 'success' }}
+        timeout-minutes: 3
+        run: python3 clusters/tests/vpa-evidence.py after results/ci/vpa
       - name: Verify the OOM diagnostics archive
-        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.verify_faults && steps.full.outcome == 'success' }}
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && (inputs.verify_faults || inputs.verify_vpa) && steps.full.outcome == 'success' }}
         timeout-minutes: 3
         run: |
           set -o pipefail
@@ -173,43 +195,7 @@ jobs:
             exit 0
           fi
           uid=$(sed -n 's/.* target_uid=\([^ ]*\) .*/\1/p' results/ci/fault-smoke/stress.txt | tail -n 1)
-          test -n "$uid"
-          kubectl --context k3d-self-healing -n ops exec -i deployment/diagnostics-receiver -- python - "$uid" <<'PY' | tee results/ci/oom-archive.txt
-          import gzip
-          import json
-          import sys
-          import time
-
-          import boto3
-          from botocore.config import Config
-
-          uid = sys.argv[1]
-          s3 = boto3.client(
-              "s3", endpoint_url="http://minio.storage.svc:9000", region_name="us-east-1",
-              config=Config(s3={"addressing_style": "path"}, connect_timeout=5, read_timeout=10),
-          )
-          bucket = "diagnostics"
-          deadline = time.monotonic() + 100
-          while time.monotonic() < deadline:
-              objects = s3.list_objects_v2(Bucket=bucket, Prefix=f"oom/{uid}/").get("Contents", [])
-              if objects:
-                  key = objects[0]["Key"]
-                  body = s3.get_object(Bucket=bucket, Key=key)["Body"].read()
-                  record = json.loads(gzip.decompress(body))
-                  assert record["pod_uid"] == uid and record["termination"]["reason"] == "OOMKilled"
-                  assert isinstance(record["previous_logs"], str) and isinstance(record["events"], list)
-                  print(json.dumps({
-                      "object": key,
-                      "pod_uid": uid,
-                      "termination_reason": "OOMKilled",
-                      "previous_log_bytes": len(record["previous_logs"].encode()),
-                      "events_recorded": len(record["events"]),
-                  }))
-                  break
-              time.sleep(4)
-          else:
-              raise SystemExit("No receiver archive matched the OOM-killed pod.")
-          PY
+          bash clusters/tests/ci-diagnostics.sh archive "$uid" | tee results/ci/oom-archive.txt
       - name: Capture diagnostics
         if: always()
         run: |

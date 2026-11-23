@@ -99,6 +99,28 @@ func TestChaos(t *testing.T) {
 	}
 }
 
+func TestCanaryFixture(t *testing.T) {
+	previous := labCanary
+	labCanary = "bad"
+	t.Cleanup(func() { labCanary = previous })
+
+	if got := request(&app{}, http.MethodGet, "/work"); got.Code != http.StatusOK || got.Header().Get("X-Lab-Canary") != "" {
+		t.Fatal("the fixture must be inactive with chaos disabled")
+	}
+	a := &app{chaosEnabled: true}
+	if got := request(a, http.MethodGet, "/work"); got.Code != http.StatusServiceUnavailable || got.Header().Get("X-Lab-Canary") != "bad" {
+		t.Fatal("the bad fixture must identify its failed work responses")
+	}
+	for _, path := range []string{"/readyz", "/healthz"} {
+		if got := request(a, http.MethodGet, path); got.Code != http.StatusOK {
+			t.Fatalf("the fixture must remain healthy on %s", path)
+		}
+	}
+	if got := request(a, http.MethodGet, "/metrics"); !strings.Contains(got.Body.String(), `http_requests_total{path="/work",status="503"} 1`) {
+		t.Fatal("the fixture failure must be recorded by application metrics")
+	}
+}
+
 func TestWriteHeapProfile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "heap.pprof")
 	if err := writeHeapProfile(path); err != nil {

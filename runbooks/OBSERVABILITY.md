@@ -37,9 +37,13 @@ After the storage Secret exists, deploy MinIO with `kubectl apply -n storage -f 
 
 ```bash
 mc mb --ignore-existing lab/diagnostics
+RECEIVER_ACCESS_KEY=$(cat "$RECEIVER_ACCESS_KEY_FILE")
+mc admin user add lab "$RECEIVER_ACCESS_KEY" "$(cat "$RECEIVER_SECRET_KEY_FILE")"
 mc admin policy create lab diagnostics-writer ops/receiver/diagnostics-policy.json
 mc admin policy attach lab diagnostics-writer --user "$RECEIVER_ACCESS_KEY"
 ```
+
+Hosted smoke and matrix runs generate separate MinIO administrator and receiver credentials for each disposable cluster. The runner verifies that the receiver can write under `oom/` and receives HTTP 403 when it tries to read the same object. Archive inspection runs on the hosted runner with the administrator identity.
 
 ## Proof
 

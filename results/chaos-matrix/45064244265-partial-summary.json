@@ -1,0 +1,2053 @@
+{
+  "complete": false,
+  "errors": [
+    "crash/C: expected 20, found 0 rows and 0 with validated k6 evidence",
+    "latency/C: expected 20, found 0 rows and 0 with validated k6 evidence",
+    "leak/C: expected 20, found 0 rows and 0 with validated k6 evidence"
+  ],
+  "cells": [
+    {
+      "scenario": "crash",
+      "config": "A",
+      "expected_runs": 10,
+      "recorded_runs": 10,
+      "validated_runs": 10,
+      "injection_methods": [
+        "chaos-mesh"
+      ],
+      "recovered_runs": 10,
+      "no_detected_impact_runs": 0,
+      "recovery_unobserved_runs": 0,
+      "median_mttr_s": 3.103100299835205,
+      "p95_mttr_s": 5.75495171546936,
+      "k6_http_requests": 325,
+      "k6_http_failures": 40,
+      "k6_http_failed_pct": 12.307692307692308,
+      "k6_dropped_iterations": 0,
+      "trials": [
+        {
+          "run_id": "0c844f2415a34346ba10894d6affe9c8",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 3.1662487983703613,
+          "probe_dropped_pct": 12.5,
+          "k6_http_requests": 32,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "2f8a5122b5bc4053beb571eb3e43dd32",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.7569682598114014,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 27,
+          "k6_http_failures": 2,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "404ac77aa4734e93baca41361e64a029",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.1519527435302734,
+          "probe_dropped_pct": 20.0,
+          "k6_http_requests": 21,
+          "k6_http_failures": 1,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "41f64c5ac83c4f23b59adb88ef315d59",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 4.4290244579315186,
+          "probe_dropped_pct": 25.0,
+          "k6_http_requests": 39,
+          "k6_http_failures": 7,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "6f1bf9cce3b84f68b6ed8faa38509a5c",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 1.8144259452819824,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 17,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "789486f131d34adf9d37b8cb33807c6e",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 3.3515231609344482,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 34,
+          "k6_http_failures": 3,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "7f8737fafddb47409d23a2f70ef452c9",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 3.039951801300049,
+          "probe_dropped_pct": 16.666666666666668,
+          "k6_http_requests": 26,
+          "k6_http_failures": 2,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "b488b96e7c1e412396dd9b838b45d3ff",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 5.75495171546936,
+          "probe_dropped_pct": 27.272727272727273,
+          "k6_http_requests": 57,
+          "k6_http_failures": 13,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "cb1f8b49c747478297a49cc3b9433817",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 4.802582502365112,
+          "probe_dropped_pct": 37.5,
+          "k6_http_requests": 48,
+          "k6_http_failures": 9,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "f20a1ab1a711469cbc94adc70fbe248e",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.42673921585083,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 24,
+          "k6_http_failures": 3,
+          "k6_dropped_iterations": 0
+        }
+      ]
+    },
+    {
+      "scenario": "crash",
+      "config": "A2",
+      "expected_runs": 10,
+      "recorded_runs": 10,
+      "validated_runs": 10,
+      "injection_methods": [
+        "chaos-mesh"
+      ],
+      "recovered_runs": 10,
+      "no_detected_impact_runs": 0,
+      "recovery_unobserved_runs": 0,
+      "median_mttr_s": 2.7169474363327026,
+      "p95_mttr_s": 12.2934410572052,
+      "k6_http_requests": 404,
+      "k6_http_failures": 39,
+      "k6_http_failed_pct": 9.653465346534654,
+      "k6_dropped_iterations": 0,
+      "trials": [
+        {
+          "run_id": "0a409bbf22094115abffc630ca4dd0d3",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.4194045066833496,
+          "probe_dropped_pct": 16.666666666666668,
+          "k6_http_requests": 25,
+          "k6_http_failures": 2,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "1ebc76da641c435f971bb9e8d21f4df0",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.915863275527954,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 30,
+          "k6_http_failures": 1,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "21a628a2a0c34a709fa181b7aca5b5b2",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.2893753051757812,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 23,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "75a7c713cc5345aeade1eb9cf5e2712d",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.6373133659362793,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 26,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "77faace5ef4244049e506cb4e059ddbf",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.796581506729126,
+          "probe_dropped_pct": 16.666666666666668,
+          "k6_http_requests": 28,
+          "k6_http_failures": 1,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "92a665c4712d4aadbbc87159b842149a",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 5.062663316726685,
+          "probe_dropped_pct": 33.333333333333336,
+          "k6_http_requests": 51,
+          "k6_http_failures": 10,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "c0dc26ab958141b39b42b306d9a344d6",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 5.577971458435059,
+          "probe_dropped_pct": 33.333333333333336,
+          "k6_http_requests": 55,
+          "k6_http_failures": 11,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "cdc9ed41032140dbb6e68dd8a8c436a7",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.353800058364868,
+          "probe_dropped_pct": 16.666666666666668,
+          "k6_http_requests": 24,
+          "k6_http_failures": 1,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "eae418938de14f37bd8cd6f88741bcb0",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 12.2934410572052,
+          "probe_dropped_pct": 2.3255813953488373,
+          "k6_http_requests": 123,
+          "k6_http_failures": 13,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "ff5c4bad6d7b485dae61a1251b0151ad",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 1.9249372482299805,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 19,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        }
+      ]
+    },
+    {
+      "scenario": "crash",
+      "config": "B",
+      "expected_runs": 20,
+      "recorded_runs": 20,
+      "validated_runs": 20,
+      "injection_methods": [
+        "chaos-mesh"
+      ],
+      "recovered_runs": 20,
+      "no_detected_impact_runs": 0,
+      "recovery_unobserved_runs": 0,
+      "median_mttr_s": 3.124330997467041,
+      "p95_mttr_s": 5.639398813247681,
+      "k6_http_requests": 672,
+      "k6_http_failures": 94,
+      "k6_http_failed_pct": 13.988095238095237,
+      "k6_dropped_iterations": 0,
+      "trials": [
+        {
+          "run_id": "06eea3ce1471424fb01450f846fde2f9",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.4834187030792236,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 25,
+          "k6_http_failures": 1,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "0ff30fd871b54e8ba61f7a68b2f83e50",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 5.749959468841553,
+          "probe_dropped_pct": 30.0,
+          "k6_http_requests": 57,
+          "k6_http_failures": 13,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "15c2e13fe4de4993ab30653b6ad9beef",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 5.639398813247681,
+          "probe_dropped_pct": 27.272727272727273,
+          "k6_http_requests": 57,
+          "k6_http_failures": 12,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "1db766fe44374c5eb92e33e63dcea9a9",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 3.3121767044067383,
+          "probe_dropped_pct": 14.285714285714286,
+          "k6_http_requests": 33,
+          "k6_http_failures": 2,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "3b92074250214c9bb37e96fe238a3e48",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 4.445321798324585,
+          "probe_dropped_pct": 25.0,
+          "k6_http_requests": 40,
+          "k6_http_failures": 7,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "4f471eedff0e4ae18fd39563a4c90097",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 5.315616130828857,
+          "probe_dropped_pct": 37.5,
+          "k6_http_requests": 53,
+          "k6_http_failures": 9,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "6502c3f6a92b48d5984399255cac0698",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.641209125518799,
+          "probe_dropped_pct": 16.666666666666668,
+          "k6_http_requests": 23,
+          "k6_http_failures": 3,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "66fcec06373c4e85bff85628ee053a23",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 3.955068826675415,
+          "probe_dropped_pct": 10.0,
+          "k6_http_requests": 37,
+          "k6_http_failures": 8,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "70287bff962545109eeee807ceac78cf",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 3.93833327293396,
+          "probe_dropped_pct": 25.0,
+          "k6_http_requests": 36,
+          "k6_http_failures": 9,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "7eac081f7f4745c687bbdff89a5d4029",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 1.6752111911773682,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 16,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "8fddf7ff45d644a888f3cd9f0ff6bf66",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 3.035399913787842,
+          "probe_dropped_pct": 12.5,
+          "k6_http_requests": 31,
+          "k6_http_failures": 4,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "900d954d4709486babb968f7ed36f30b",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.928318500518799,
+          "probe_dropped_pct": 14.285714285714286,
+          "k6_http_requests": 29,
+          "k6_http_failures": 1,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "9db95282da4943988ecd05fa86ea55e0",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.5655953884124756,
+          "probe_dropped_pct": 14.285714285714286,
+          "k6_http_requests": 25,
+          "k6_http_failures": 2,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "a8ae70c8d8d840e9a2f0f2b9b815e721",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 3.6084654331207275,
+          "probe_dropped_pct": 12.5,
+          "k6_http_requests": 33,
+          "k6_http_failures": 6,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "afa6a63cc08d48d58e1ea6be2e4fd1ee",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.447660207748413,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 24,
+          "k6_http_failures": 2,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "c0a8b041ea2248248a49932e7fadcb12",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 3.2132620811462402,
+          "probe_dropped_pct": 12.5,
+          "k6_http_requests": 32,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "cf2d80630b384ddeadf0975535b44a48",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.685713291168213,
+          "probe_dropped_pct": 16.666666666666668,
+          "k6_http_requests": 26,
+          "k6_http_failures": 1,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "ef8b80eda5bd4d07a052880cd9e85401",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 1.90763521194458,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 19,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "f7438357698240aeaeb2253990115bc6",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 5.44066047668457,
+          "probe_dropped_pct": 30.0,
+          "k6_http_requests": 54,
+          "k6_http_failures": 11,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "fb6d615e9d324f0f896c029e205ba182",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 2.22993803024292,
+          "probe_dropped_pct": 20.0,
+          "k6_http_requests": 22,
+          "k6_http_failures": 3,
+          "k6_dropped_iterations": 0
+        }
+      ]
+    },
+    {
+      "scenario": "crash",
+      "config": "C",
+      "expected_runs": 20,
+      "recorded_runs": 0,
+      "validated_runs": 0,
+      "injection_methods": [],
+      "recovered_runs": 0,
+      "no_detected_impact_runs": 0,
+      "recovery_unobserved_runs": 0,
+      "median_mttr_s": null,
+      "p95_mttr_s": null,
+      "k6_http_requests": 0,
+      "k6_http_failures": 0,
+      "k6_http_failed_pct": null,
+      "k6_dropped_iterations": null,
+      "trials": []
+    },
+    {
+      "scenario": "latency",
+      "config": "A",
+      "expected_runs": 10,
+      "recorded_runs": 10,
+      "validated_runs": 10,
+      "injection_methods": [
+        "app-level"
+      ],
+      "recovered_runs": 10,
+      "no_detected_impact_runs": 0,
+      "recovery_unobserved_runs": 0,
+      "median_mttr_s": 16.04494059085846,
+      "p95_mttr_s": 16.781582832336426,
+      "k6_http_requests": 1607,
+      "k6_http_failures": 495,
+      "k6_http_failed_pct": 30.802738021157435,
+      "k6_dropped_iterations": 0,
+      "trials": [
+        {
+          "run_id": "06148681f66b4b729febfdcc803a33b4",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.544309377670288,
+          "probe_dropped_pct": 30.0,
+          "k6_http_requests": 165,
+          "k6_http_failures": 51,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "13642d7d829a4a698e5caf6584a9bf60",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.03938317298889,
+          "probe_dropped_pct": 32.142857142857146,
+          "k6_http_requests": 159,
+          "k6_http_failures": 50,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "331cbd4a65074c4aa784ac877dbcf852",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.79952597618103,
+          "probe_dropped_pct": 25.806451612903224,
+          "k6_http_requests": 157,
+          "k6_http_failures": 50,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "55b2e59191294296a91f3b918df421ef",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.789149522781372,
+          "probe_dropped_pct": 33.333333333333336,
+          "k6_http_requests": 155,
+          "k6_http_failures": 47,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "7e28855833264076977e5556ddcff744",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.53726553916931,
+          "probe_dropped_pct": 38.46153846153846,
+          "k6_http_requests": 165,
+          "k6_http_failures": 50,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "af1e107461044732a145b7874536cb12",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.289400577545166,
+          "probe_dropped_pct": 31.03448275862069,
+          "k6_http_requests": 163,
+          "k6_http_failures": 51,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "b59d25a550d140ed886733e102e1d949",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.034377098083496,
+          "probe_dropped_pct": 41.666666666666664,
+          "k6_http_requests": 160,
+          "k6_http_failures": 47,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "d5b9fc43f7f24dadacac34f3965d1e02",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.808094263076782,
+          "probe_dropped_pct": 15.384615384615385,
+          "k6_http_requests": 156,
+          "k6_http_failures": 53,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "e0e8bf4100ba4db49822de5e62aa8f9a",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.050498008728027,
+          "probe_dropped_pct": 25.0,
+          "k6_http_requests": 160,
+          "k6_http_failures": 51,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "f69436be84834ef2bc5a207cdf2f68d4",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.781582832336426,
+          "probe_dropped_pct": 47.82608695652174,
+          "k6_http_requests": 167,
+          "k6_http_failures": 45,
+          "k6_dropped_iterations": 0
+        }
+      ]
+    },
+    {
+      "scenario": "latency",
+      "config": "A2",
+      "expected_runs": 10,
+      "recorded_runs": 10,
+      "validated_runs": 10,
+      "injection_methods": [
+        "app-level"
+      ],
+      "recovered_runs": 10,
+      "no_detected_impact_runs": 0,
+      "recovery_unobserved_runs": 0,
+      "median_mttr_s": 16.03748047351837,
+      "p95_mttr_s": 16.80106258392334,
+      "k6_http_requests": 1598,
+      "k6_http_failures": 493,
+      "k6_http_failed_pct": 30.851063829787233,
+      "k6_dropped_iterations": 0,
+      "trials": [
+        {
+          "run_id": "1658ec212c35472c80db9d4ed700a631",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.800668478012085,
+          "probe_dropped_pct": 25.806451612903224,
+          "k6_http_requests": 157,
+          "k6_http_failures": 50,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "53a2d268650b4a5dac7b0c6fae411da4",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.80106258392334,
+          "probe_dropped_pct": 22.857142857142858,
+          "k6_http_requests": 168,
+          "k6_http_failures": 54,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "717b3b9a67a64faba79bea80972eb0e4",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.040424823760986,
+          "probe_dropped_pct": 32.142857142857146,
+          "k6_http_requests": 159,
+          "k6_http_failures": 48,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "7799412b0c7345eeb3f5880e221796f0",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.034536123275757,
+          "probe_dropped_pct": 41.666666666666664,
+          "k6_http_requests": 158,
+          "k6_http_failures": 46,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "a43836f783d44a0cac9e796bf922dd1e",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.291496515274048,
+          "probe_dropped_pct": 31.03448275862069,
+          "k6_http_requests": 163,
+          "k6_http_failures": 50,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "a9b540976efd403eab5d05f56fb797ad",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.780948877334595,
+          "probe_dropped_pct": 33.333333333333336,
+          "k6_http_requests": 157,
+          "k6_http_failures": 48,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "ab14be5befc74cf6a6cf0db50467e54e",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.788062334060669,
+          "probe_dropped_pct": 33.333333333333336,
+          "k6_http_requests": 157,
+          "k6_http_failures": 48,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "b248a5a7204d49e792d138965bf58d32",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.787224292755127,
+          "probe_dropped_pct": 33.333333333333336,
+          "k6_http_requests": 157,
+          "k6_http_failures": 48,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "b8d998532f32409db1d491759f4ba187",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.044230461120605,
+          "probe_dropped_pct": 32.142857142857146,
+          "k6_http_requests": 161,
+          "k6_http_failures": 49,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "bf985a1ce9da45bfad4edf5fd304d0ef",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.042012214660645,
+          "probe_dropped_pct": 25.0,
+          "k6_http_requests": 161,
+          "k6_http_failures": 52,
+          "k6_dropped_iterations": 0
+        }
+      ]
+    },
+    {
+      "scenario": "latency",
+      "config": "B",
+      "expected_runs": 20,
+      "recorded_runs": 20,
+      "validated_runs": 20,
+      "injection_methods": [
+        "app-level"
+      ],
+      "recovered_runs": 20,
+      "no_detected_impact_runs": 0,
+      "recovery_unobserved_runs": 0,
+      "median_mttr_s": 16.848451137542725,
+      "p95_mttr_s": 17.327197790145874,
+      "k6_http_requests": 3378,
+      "k6_http_failures": 391,
+      "k6_http_failed_pct": 11.5748963883955,
+      "k6_dropped_iterations": 0,
+      "trials": [
+        {
+          "run_id": "0572d9ea427c403f801f17987957a39d",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 17.092661142349243,
+          "probe_dropped_pct": 5.357142857142857,
+          "k6_http_requests": 171,
+          "k6_http_failures": 14,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "0d2c5eac64104212af3cda970d3ff0be",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.32555651664734,
+          "probe_dropped_pct": 5.660377358490566,
+          "k6_http_requests": 164,
+          "k6_http_failures": 15,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "13147e75a3a8494092d07dd73793bebb",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 17.321747541427612,
+          "probe_dropped_pct": 13.333333333333334,
+          "k6_http_requests": 174,
+          "k6_http_failures": 29,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "19b2f64c01484b3fa4820ff64ad23b6b",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.35016417503357,
+          "probe_dropped_pct": 5.660377358490566,
+          "k6_http_requests": 163,
+          "k6_http_failures": 12,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "1ab18f63cc114ff89f78414c01f79e4a",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.567620277404785,
+          "probe_dropped_pct": 10.869565217391305,
+          "k6_http_requests": 165,
+          "k6_http_failures": 23,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "1b2ee1af601f49f69dbf19f2207837b2",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.58644938468933,
+          "probe_dropped_pct": 5.555555555555555,
+          "k6_http_requests": 166,
+          "k6_http_failures": 14,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "1e552f9b11134d618d7c98cc62d6a06b",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 17.32636284828186,
+          "probe_dropped_pct": 10.204081632653061,
+          "k6_http_requests": 173,
+          "k6_http_failures": 26,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "295b9f08953540bc805a9467308168d3",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 17.07170033454895,
+          "probe_dropped_pct": 13.636363636363637,
+          "k6_http_requests": 170,
+          "k6_http_failures": 25,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "5f5eeb9c0803433c83cf4f7e04825376",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 17.317718744277954,
+          "probe_dropped_pct": 7.547169811320755,
+          "k6_http_requests": 174,
+          "k6_http_failures": 30,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "643ca13270b74a08933781ad23e50213",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 17.329931497573853,
+          "probe_dropped_pct": 5.2631578947368425,
+          "k6_http_requests": 174,
+          "k6_http_failures": 17,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "6634e39209434fa4ba922e3321b60cc6",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 17.10478901863098,
+          "probe_dropped_pct": 3.3333333333333335,
+          "k6_http_requests": 172,
+          "k6_http_failures": 16,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "71548a46b5744e3881066922e6d77b78",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.85143518447876,
+          "probe_dropped_pct": 5.454545454545454,
+          "k6_http_requests": 168,
+          "k6_http_failures": 13,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "9a16ddbb469d463f881c066a99bc7a4e",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 17.092944622039795,
+          "probe_dropped_pct": 5.357142857142857,
+          "k6_http_requests": 170,
+          "k6_http_failures": 15,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "a8bc12f44335408a8a79da9804dc1145",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.814727067947388,
+          "probe_dropped_pct": 10.638297872340425,
+          "k6_http_requests": 169,
+          "k6_http_failures": 23,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "ad4a3de6fa39452ebf4981a74f69d230",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.58374786376953,
+          "probe_dropped_pct": 5.555555555555555,
+          "k6_http_requests": 166,
+          "k6_http_failures": 14,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "b3fbe3e449ee4af29671bf0e4afe12a4",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.56649899482727,
+          "probe_dropped_pct": 10.869565217391305,
+          "k6_http_requests": 166,
+          "k6_http_failures": 24,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "eb7c1829e7914414ae4098b6da5ed8ed",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 17.327197790145874,
+          "probe_dropped_pct": 7.547169811320755,
+          "k6_http_requests": 174,
+          "k6_http_failures": 16,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "f0a649239e2949e5895bf0c22033a5b8",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.06726050376892,
+          "probe_dropped_pct": 8.333333333333334,
+          "k6_http_requests": 161,
+          "k6_http_failures": 25,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "f31ac2749924405f999c82d992c7d9de",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.84546709060669,
+          "probe_dropped_pct": 5.454545454545454,
+          "k6_http_requests": 169,
+          "k6_http_failures": 15,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "fee8905380374beb95b15fc46c7fa949",
+          "injection_type": "app-level",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.83332872390747,
+          "probe_dropped_pct": 10.638297872340425,
+          "k6_http_requests": 169,
+          "k6_http_failures": 25,
+          "k6_dropped_iterations": 0
+        }
+      ]
+    },
+    {
+      "scenario": "latency",
+      "config": "C",
+      "expected_runs": 20,
+      "recorded_runs": 0,
+      "validated_runs": 0,
+      "injection_methods": [],
+      "recovered_runs": 0,
+      "no_detected_impact_runs": 0,
+      "recovery_unobserved_runs": 0,
+      "median_mttr_s": null,
+      "p95_mttr_s": null,
+      "k6_http_requests": 0,
+      "k6_http_failures": 0,
+      "k6_http_failed_pct": null,
+      "k6_dropped_iterations": null,
+      "trials": []
+    },
+    {
+      "scenario": "leak",
+      "config": "A",
+      "expected_runs": 10,
+      "recorded_runs": 10,
+      "validated_runs": 10,
+      "injection_methods": [
+        "chaos-mesh"
+      ],
+      "recovered_runs": 10,
+      "no_detected_impact_runs": 0,
+      "recovery_unobserved_runs": 0,
+      "median_mttr_s": 15.84043562412262,
+      "p95_mttr_s": 16.125171422958374,
+      "k6_http_requests": 1586,
+      "k6_http_failures": 0,
+      "k6_http_failed_pct": 0.0,
+      "k6_dropped_iterations": 0,
+      "trials": [
+        {
+          "run_id": "01f58a4ca62c4d10aa54ae007115d18b",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.12414860725403,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 161,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "151f30cb76fc467590c052a0b36bbd5c",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.86459493637085,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "1773d4b929d3453eae2717139b58826f",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.746748924255371,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 157,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "6cbf2fbd55ba49c1aa73b5628ddce42e",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.67764663696289,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 157,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "9bc07a959f6f45b7b3c1aa58730245d4",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.050350189208984,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 160,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "c0986039271a42d0b86183bc55dd74ce",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.710073471069336,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 157,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "c3fe38626a3942d191ec2baf74a1adad",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.125171422958374,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 161,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "e3fb3b3162f24c638ce0e85d3df5d953",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.697874546051025,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 157,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "f082f79a04e5402f8f734e02cacb3959",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.980238199234009,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 160,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "f6b19b77d95b4189b6bca67a3eaf981a",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.81627631187439,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        }
+      ]
+    },
+    {
+      "scenario": "leak",
+      "config": "A2",
+      "expected_runs": 10,
+      "recorded_runs": 10,
+      "validated_runs": 10,
+      "injection_methods": [
+        "chaos-mesh"
+      ],
+      "recovered_runs": 10,
+      "no_detected_impact_runs": 0,
+      "recovery_unobserved_runs": 0,
+      "median_mttr_s": 15.809037566184998,
+      "p95_mttr_s": 16.107723474502563,
+      "k6_http_requests": 1585,
+      "k6_http_failures": 0,
+      "k6_http_failed_pct": 0.0,
+      "k6_dropped_iterations": 0,
+      "trials": [
+        {
+          "run_id": "0e42c37c32d54916b774c9199e3f701d",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.813421964645386,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "5b5a6fad635444f78072db430b5e4f6b",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.806716203689575,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "654357f0eb0d4a11b7aabfe2da34e356",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.107723474502563,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 161,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "76c7dafd8e074de18fa058f3341607d3",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.807474851608276,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "79c21c1bea9c4703975266ca2a5171b1",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.799524545669556,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "868f213b3edc4ce198d46bfb8b8ca100",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.810600280761719,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "96a7539501c8419ebb3e959b32a1216e",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.679227113723755,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 157,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "a0a948e993534681be946739ee18d312",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.776949882507324,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "c1b98ae9aac94d13a5a31414a19167a4",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.076637029647827,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 161,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "df2dfe753382472c8b90ffd97eafdd57",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.813779354095459,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        }
+      ]
+    },
+    {
+      "scenario": "leak",
+      "config": "B",
+      "expected_runs": 20,
+      "recorded_runs": 20,
+      "validated_runs": 20,
+      "injection_methods": [
+        "chaos-mesh"
+      ],
+      "recovered_runs": 20,
+      "no_detected_impact_runs": 0,
+      "recovery_unobserved_runs": 0,
+      "median_mttr_s": 15.875500440597534,
+      "p95_mttr_s": 16.038294792175293,
+      "k6_http_requests": 3174,
+      "k6_http_failures": 0,
+      "k6_http_failed_pct": 0.0,
+      "k6_dropped_iterations": 0,
+      "trials": [
+        {
+          "run_id": "015f4372e2e2446e948e67c653fef623",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.114415168762207,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 161,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "0b4a0133e7924b2ea22f1d06c839e624",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.913090944290161,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 159,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "1fa735010ce34da8b98b0cd1d55c3828",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.891845941543579,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "321c53f0ce464ccc8aade3e6d3e93c3d",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.939255714416504,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 160,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "3684890697844bc2b9c127d69e0dee27",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.857658863067627,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 159,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "39739230c0e942e3ae30daa297bcb3d9",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.755627632141113,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "3da28ede9e3043898e0734060a8b457e",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 16.038294792175293,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 161,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "4b058adbe67f46f992010cd9a1eef7b7",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.948492765426636,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 160,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "7446625635d94991a83c74ede5e3f113",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.762518644332886,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "7d248bff116e4069b433931005c7a93c",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.851573705673218,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 159,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "7dfa3c2ee7a640ccb1be2f9610b7bd99",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.873217105865479,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 159,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "819159e3860a411d8ab59267eeeb769d",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.741909742355347,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "913f2a5f844147fc9d33833389accb57",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.612650632858276,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 157,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "92b4b2cce9984bc48794c903c82e8a32",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.87778377532959,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "b5a7fb4b6a22449bb928de454dc36ea4",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.630754947662354,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 156,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "be703aa594854e4589631297f886db1a",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.759528875350952,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 157,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "cf799cf564884a27b30345cc8a8e4760",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.94952940940857,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 159,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "da3b6d891c534ac2b4dd8680a7caf063",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.871122598648071,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 158,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "dbd4050deb0048dab73e564b49a9496b",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.994820833206177,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 160,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        },
+        {
+          "run_id": "e90b4b07e00f4d818cc5b4e4a5751d0c",
+          "injection_type": "chaos-mesh",
+          "load": {
+            "rate": 10,
+            "duration_s": 120,
+            "work_url": "http://127.0.0.1:8080"
+          },
+          "outcome": "recovered",
+          "mttr_s": 15.89000391960144,
+          "probe_dropped_pct": 0.0,
+          "k6_http_requests": 159,
+          "k6_http_failures": 0,
+          "k6_dropped_iterations": 0
+        }
+      ]
+    },
+    {
+      "scenario": "leak",
+      "config": "C",
+      "expected_runs": 20,
+      "recorded_runs": 0,
+      "validated_runs": 0,
+      "injection_methods": [],
+      "recovered_runs": 0,
+      "no_detected_impact_runs": 0,
+      "recovery_unobserved_runs": 0,
+      "median_mttr_s": null,
+      "p95_mttr_s": null,
+      "k6_http_requests": 0,
+      "k6_http_failures": 0,
+      "k6_http_failed_pct": null,
+      "k6_dropped_iterations": null,
+      "trials": []
+    }
+  ]
+}

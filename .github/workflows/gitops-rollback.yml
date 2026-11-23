@@ -1,0 +1,58 @@
+name: GitOps rollback evidence
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: gitops-rollback-proof
+    env:
+      K3D_AGENTS: '2'
+      K3D_NODE_EXPORTER: 'false'
+      GITOPS_REVISION: proof/gitops-rollback
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify the proof branch starts at this commit
+        run: |
+          set -o pipefail
+          git ls-remote --exit-code --refs origin "refs/heads/$GITOPS_REVISION" | cut -f1 | grep -Fx "$GITHUB_SHA"
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.19.0
+      - name: Install k3d and set runner watch capacity
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -fsSLo "$RUNNER_TEMP/bin/k3d" https://github.com/k3d-io/k3d/releases/download/v5.8.3/k3d-linux-amd64
+          chmod +x "$RUNNER_TEMP/bin/k3d"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          if (( $(sysctl -n fs.inotify.max_user_instances) < 1024 )); then
+            sudo sysctl -w fs.inotify.max_user_instances=1024
+          fi
+      - name: Start the disposable cluster and verify the baseline
+        run: |
+          bash clusters/platform.sh core
+          bash clusters/tests/gitops-rollback.sh baseline results/rollback
+      - name: Observe the bad push and confirm the outage
+        run: bash clusters/tests/gitops-rollback.sh bad results/rollback
+      - name: Observe the revert push and confirm recovery
+        run: bash clusters/tests/gitops-rollback.sh revert results/rollback
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gitops-rollback-evidence
+          path: results/rollback/
+      - name: Remove the disposable cluster
+        if: always()
+        run: |
+          if command -v k3d >/dev/null; then
+            k3d cluster delete self-healing
+          fi

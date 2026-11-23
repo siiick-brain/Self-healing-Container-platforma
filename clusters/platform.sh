@@ -31,16 +31,32 @@ if [[ -n $matrix_profile ]]; then
   fi
 fi
 
+redis_options=()
+if [[ ${GITHUB_ACTIONS:-false} == true ]]; then
+  redis_repository=docker.io/library/redis
+  redis_tag=7.4.2-alpine
+  redis_options=(--set-string "redis.image.repository=$redis_repository" --set-string "redis.image.tag=$redis_tag")
+fi
+
 if ! "${kube[@]}" get --raw=/readyz >/dev/null 2>&1; then
   config=$(mktemp)
   trap 'rm -f "$config"' EXIT
   sed "s/^agents: 3$/agents: $agents/" clusters/k3d.yaml > "$config"
   k3d cluster create --config "$config"
+  if (( ${#redis_options[@]} )); then
+    # Import the Linux amd64 manifest without references to other platforms in the image index.
+    redis_ref="$redis_repository@sha256:519f0189dfdee3bc0bad61fb265fe73d864b5c64020e6579ad48a45c49965635"
+    docker pull "$redis_ref"
+    docker tag "$redis_ref" "$redis_repository:$redis_tag"
+    k3d image import -c "$name" "$redis_repository:$redis_tag"
+  fi
 fi
 
 "${kube[@]}" wait node --all --for=condition=Ready --timeout=120s
 "${kube[@]}" apply -f clusters/namespaces
-helm upgrade --install argocd argo-cd --repo https://argoproj.github.io/argo-helm   --version 7.8.13 --namespace argocd --create-namespace --kube-context "$context"   --values clusters/argocd-values.yaml --wait --timeout 5m
+helm upgrade --install argocd argo-cd --repo https://argoproj.github.io/argo-helm \
+  --version 7.8.13 --namespace argocd --create-namespace --kube-context "$context" \
+  --values clusters/argocd-values.yaml "${redis_options[@]}" --wait --timeout 5m
 
 repo=${GITOPS_REPO:-https://github.com/siiick-brain/Self-healing-Container-platforma.git}
 revision=${GITOPS_REVISION:-main}

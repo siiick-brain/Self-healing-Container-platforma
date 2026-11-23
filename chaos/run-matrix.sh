@@ -1,6 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+check_k6() {
+  local version
+  version=$(k6 version) || return 1
+  # The official v0.58.0 assets embed this prerelease display version.
+  if [[ $version != 'k6 v1.0.0-rc1 (commit/02fdc80b36, '* ]]; then
+    printf 'Expected the k6 v0.58.0 build at 02fdc80b36; found %s\n' "$version" >&2
+    return 1
+  fi
+}
+
+if [[ ${1:-} == --check-k6 && $# == 1 ]]; then
+  check_k6
+  exit 0
+fi
+
 if [[ $# != 2 || -z ${2:-} ]]; then
   echo "Usage: bash chaos/run-matrix.sh A|A2|B|C OUTPUT_DIR" >&2
   exit 2
@@ -34,8 +49,8 @@ for fault in pod stress network; do
   fi
 done
 
-k6_version=$(k6 version)
-[[ $k6_version == 'k6 v0.58.0 '* ]] || fail "Expected k6 v0.58.0, found $k6_version"
+check_k6
+[[ ${APP_DIGEST:-} =~ ^sha256:[0-9a-f]{64}$ ]] || fail "Expected a pinned application image digest."
 context=k3d-self-healing
 kube=(kubectl --context "$context" --request-timeout=10s)
 demo=("${kube[@]}" -n demo)
@@ -63,7 +78,7 @@ fi
 other_workload=$("${demo[@]}" get "$other_kind" resilient-app --ignore-not-found -o name)
 [[ -z $other_workload ]] || fail "Unexpected $other_workload for profile $profile."
 workload=$("${demo[@]}" get "$kind" resilient-app -o json)
-jq -e --arg profile "$profile" '
+jq -e --arg profile "$profile" --arg digest "$APP_DIGEST" '
   def probe($path; $period; $failures):
     .httpGet.path == $path and .httpGet.port == "http" and
     .periodSeconds == $period and .failureThreshold == $failures and .timeoutSeconds == 1;
@@ -72,6 +87,7 @@ jq -e --arg profile "$profile" '
     (.spec.strategy.canary.canaryService == "resilient-app-canary" and
       any(.spec.strategy.canary.analysis.templates[]?; .templateName == "resilient-app-success"))) and
   any(.spec.template.spec.containers[]; .name == "app" and
+    (.image | endswith("@" + $digest)) and
     any(.env[]; .name == "CHAOS_ENABLED" and .value == "true") and
     (if $profile == "A" then .livenessProbe == null and .readinessProbe == null
      elif $profile == "A2" then (.livenessProbe | probe("/healthz"; 10; 3)) and
@@ -89,6 +105,10 @@ ready_target() {
     pod=$("${demo[@]}" get replicasets,pods -l "$selector" -o json |
       jq -r --arg owner "$workload_uid" --arg prefix "$context-" --arg preferred "$preferred" \
         --argjson template "$template" '
+          def probe_defaults:
+            if . == null then null else (.successThreshold //= 1) | (.httpGet.scheme //= "HTTP") end;
+          def comparable:
+            .livenessProbe |= probe_defaults | .readinessProbe |= probe_defaults;
           def owned_by($uids):
             any(.metadata.ownerReferences[]?; .controller and (.uid as $uid | $uids | index($uid) != null));
           [.items[] | select(.kind == "ReplicaSet" and owned_by([$owner])) | .metadata.uid] as $sets |
@@ -96,7 +116,7 @@ ready_target() {
           select(length == 3 and all(.[]; owned_by($sets) and
             ((.spec.nodeName // "") | startswith($prefix)) and
             any(.spec.containers[]; .name == "app" and
-              ({image, livenessProbe, readinessProbe, resources} == $template)) and
+              (({image, livenessProbe, readinessProbe, resources} | comparable) == ($template | comparable))) and
             any(.status.conditions[]?; .type == "Ready" and .status == "True") and
             any(.status.containerStatuses[]?; .name == "app" and .ready))) |
           sort_by(.metadata.creationTimestamp, .metadata.name)[] |
@@ -109,6 +129,7 @@ ready_target() {
     sleep 2
   done
   echo "Profile $profile did not have three ready target replicas (requested: ${preferred:-any})." >&2
+  "${demo[@]}" get "$kind",replicasets,pods -l "$selector" -o wide >&2 || true
   return 1
 }
 

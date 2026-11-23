@@ -6,11 +6,17 @@ set -euo pipefail
 # Grafana must have anonymous Viewer access in this CI cluster only. Keep its
 # Service internal and publish no Grafana ingress or host port. Node 20+, npm,
 # kubectl, curl, jq, and permission to install Chromium dependencies are needed.
-# Upload only the three named outputs, and only if this script succeeds.
+# RECORD_GRAFANA_DEMO=true also requires FFmpeg and captures a dashboard GIF.
 output=${1:?Pass an output directory}
 mkdir -p "$output"
 output=$(cd "$output" && pwd)
-for file in grafana-red.png grafana-slo.png grafana-prometheus.json; do
+files=(grafana-red.png grafana-slo.png grafana-prometheus.json)
+record_demo=${RECORD_GRAFANA_DEMO:-false}
+if [[ $record_demo == true ]]; then
+  command -v ffmpeg >/dev/null
+  files+=(grafana-demo.gif)
+fi
+for file in "${files[@]}"; do
   if [[ -e "$output/$file" ]]; then
     printf 'Evidence already exists: %s\n' "$output/$file" >&2
     exit 1
@@ -103,6 +109,19 @@ for name in red slo; do
   "$cli" -s=grafana-evidence run-code --filename=wait-for-dashboard.js
   "$cli" -s=grafana-evidence screenshot --full-page --filename="grafana-$name.png"
   test -s "grafana-$name.png"
+  if [[ $record_demo == true ]]; then
+    if [[ $name == red ]]; then
+      "$cli" -s=grafana-evidence video-start grafana-demo.webm --size=1200x864 --fps=12
+      sleep 3
+    else
+      sleep 3
+      "$cli" -s=grafana-evidence video-stop
+      ffmpeg -hide_banner -loglevel error -filter_complex_threads 1 -i grafana-demo.webm \
+        -filter_complex 'fps=10,split[frames][colors];[colors]palettegen=max_colors=128[palette];[frames][palette]paletteuse' \
+        -loop 0 grafana-demo.gif
+      test -s grafana-demo.gif
+    fi
+  fi
 done
 
-install -m 0644 grafana-red.png grafana-slo.png grafana-prometheus.json "$output/"
+install -m 0644 "${files[@]}" "$output/"

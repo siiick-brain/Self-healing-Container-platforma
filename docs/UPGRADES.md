@@ -1,5 +1,13 @@
-# Upgrade procedure
+# k3s rebuild comparison
 
-Capture cluster version and app health before changing the k3s image pin. Confirm the change is compatible with the local k3d release. Under k6 load, drain an agent hosting an app replica and verify that the disruption budget leaves service available. Record the client results and the node and pod state.
+The [rebuild workflow](../.github/workflows/k3s-upgrade.yml) compares the checked-in `v1.33.5-k3s1` image with [the adjacent `v1.33.6+k3s1` release](https://github.com/k3s-io/k3s/releases/tag/v1.33.6%2Bk3s1). Each GitHub-hosted runner builds a fresh core cluster with k3d `v5.8.3` and the same Git revision. The candidate runner changes its checkout's image pin for that run. The comparison covers fresh installation and GitOps resynchronization. In-place upgrades and persistent data migration need separate tests.
 
-Rebuild a disposable cluster with the proposed image and resync GitOps. Compare ingress, policy and monitoring checks. Save both version checks and both proof runs in [results](../results/). Revert the image pin and rebuild if the replacement fails.
+Dispatch the workflow after it is available on the default branch.
+
+```powershell
+gh workflow run k3s-upgrade.yml --repo siiick-brain/Self-healing-Container-platforma
+```
+
+Download the `k3s-rebuild-baseline` and `k3s-rebuild-candidate` artifacts from the run. Each records the Kubernetes server and node versions, Argo CD application status, `/work` via ingress, allowed and denied network paths, Prometheus scrape health, and resource use. The comparison also checks that both clusters actually ran the same app image digest. Save the resulting proof in [results](../results/).
+
+Run the [node drain check](../clusters/tests/drain-under-load.sh) as a separate scenario to verify service availability under k6 load while the agent drains. The first hosted drain restored three ready replicas and uncordoned the node. Four of 33 requests timed out during eviction, below the 99.5% availability target. [Drain evidence](https://github.com/siiick-brain/Self-healing-Container-platforma/actions/runs/45063333678/artifacts/14769814346)

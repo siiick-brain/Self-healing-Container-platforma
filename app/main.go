@@ -17,6 +17,9 @@ import (
 
 const mib = 1024 * 1024
 
+// The disposable canary proof builds its fixture with -X main.labCanary=bad.
+var labCanary string
+
 type app struct {
 	chaosEnabled bool
 	crash        func()
@@ -92,6 +95,12 @@ func (a *app) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/healthz":
 		fmt.Fprintln(w, "ok")
 	case "/readyz", "/work":
+		if path == "/work" && a.chaosEnabled && labCanary == "bad" {
+			status = http.StatusServiceUnavailable
+			w.Header().Set("X-Lab-Canary", labCanary)
+			http.Error(w, "canary fixture", status)
+			return
+		}
 		a.mu.Lock()
 		delay := a.latency
 		a.mu.Unlock()
